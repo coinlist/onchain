@@ -1,11 +1,11 @@
 # CoinList On-Chain
 
 This repository serves as the official public registry for Ethereum smart-contracts and Solana
-programs developed and deployed by CoinList. The main purpose of this on-chain infrastructure it to
+programs developed and deployed by CoinList. The main purpose of this on-chain infrastructure is to
 be used by CoinList to operate the offers that it provides.
 
-> **Note:** The software in this repository are provided for transparency and verification purposes
-> only. They are designed for CoinList-operated sales and are not intended as a development
+> **Note:** The software in this repository is provided for transparency and verification purposes
+> only. It is designed for CoinList-operated sales and is not intended as a development
 > framework for third-party use.
 
 ## Security & Audits
@@ -24,7 +24,7 @@ If you believe you have identified a security vulnerability:
 
 ## Usage Notes
 
-- Sofware in this repository is intended as **production** release, not examples.
+- Software in this repository is intended as a **production** release, not examples.
 - Deploying or modifying this software for third-party use is **not supported** though not
   explicitly forbidden by CoinList. Licensing varies depending on specific module.
 - Interaction with deployed contracts or programs should occur only through official CoinList
