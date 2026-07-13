@@ -2,8 +2,12 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {IStopable} from "shared/stopable/IStopable.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {TokenSaleDist} from "sale/TokenSaleDist.sol";
+import {ITokenSaleDist} from "sale/ITokenSaleDist.sol";
 import {DistTotal as Total} from "sale/Types.sol";
 
 contract TokenSaleRemit is Test {
@@ -33,7 +37,7 @@ contract TokenSaleRemit is Test {
 
     function testRevertWhenStopped() public {
         dist.stop(dist.DISTRIBUTE_LEVEL());
-        vm.expectRevert();
+        vm.expectRevert(IStopable.IsStopped.selector);
 
         dist.distribute(ALICE, 10);
 
@@ -43,7 +47,7 @@ contract TokenSaleRemit is Test {
 
     function testRevertBatchWhenStopped() public {
         dist.stop(dist.DISTRIBUTE_LEVEL());
-        vm.expectRevert();
+        vm.expectRevert(IStopable.IsStopped.selector);
 
         dist.distribute(users, amounts);
 
@@ -54,14 +58,14 @@ contract TokenSaleRemit is Test {
 
     function testRevertBatchListLength() public {
         vm.prank(DISTRIBUTOR);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleDist.NonEquivalentListLength.selector);
         dist.distribute(wrongUsers, amounts);
     }
 
     function testRevertWhenNotDistributor() public {
         // does not have distribute level perms
         vm.prank(ALICE);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         dist.distribute(ALICE, 10);
 
         // no dist recorded
@@ -72,19 +76,19 @@ contract TokenSaleRemit is Test {
 
     function testRevertZeroAddress() public {
         vm.prank(DISTRIBUTOR);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleDist.InvalidAddress.selector);
         dist.distribute(address(0), 10);
     }
 
     function testRevertContractAddress() public {
         vm.prank(DISTRIBUTOR);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleDist.InvalidAddress.selector);
         dist.distribute(address(dist), 10);
     }
 
     function testReverMinDist() public {
         vm.prank(DISTRIBUTOR);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleDist.InsufficientAmount.selector);
         dist.distribute(ALICE, 0);
 
         assertEq(zero(ALICE), true);
@@ -94,7 +98,7 @@ contract TokenSaleRemit is Test {
     // we hove no balance of the dist token..
     function testRevertNoBalance() public {
         vm.prank(DISTRIBUTOR);
-        vm.expectRevert();
+        vm.expectRevert(SafeTransferLib.TransferFailed.selector);
         dist.distribute(ALICE, 10);
 
         assertEq(zero(ALICE), true);
@@ -105,7 +109,7 @@ contract TokenSaleRemit is Test {
         // get balance of the dist token
         token.mint(address(dist), 20);
         vm.prank(DISTRIBUTOR);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleDist.InsufficientAmount.selector);
         // BOB will succeed, ALICE will fail with min
         dist.distribute(users, wrongAmounts);
 

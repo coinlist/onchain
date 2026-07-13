@@ -2,7 +2,11 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {IStopable} from "shared/stopable/IStopable.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
+import {ITokenSaleFund} from "sale/ITokenSaleFund.sol";
 import {SaleTotal as Total} from "sale/Types.sol";
 
 contract TokenSaleRemit is Test {
@@ -44,7 +48,7 @@ contract TokenSaleRemit is Test {
 
     function testRevertWhenStopped() public {
         fund.stop(fund.REMIT_LEVEL());
-        vm.expectRevert();
+        vm.expectRevert(IStopable.IsStopped.selector);
 
         fund.remit(ALICE, OPT_ONE, F_TOKEN_2, 10);
 
@@ -55,7 +59,7 @@ contract TokenSaleRemit is Test {
     function testRevertBatchWhenStopped() public {
         // may also use the sum of each level, stopping both
         fund.stop(fund.COMMIT_LEVEL() + fund.REMIT_LEVEL());
-        vm.expectRevert();
+        vm.expectRevert(IStopable.IsStopped.selector);
 
         fund.remit(users, OPT_ONE, F_TOKEN_2, amounts);
 
@@ -67,7 +71,7 @@ contract TokenSaleRemit is Test {
     function testRevertWhenNotRemitter() public {
         // does not have remit level perms
         vm.prank(COMMITTER);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         fund.remit(ALICE, OPT_ONE, F_TOKEN_1, 10);
 
         // no remits recorded
@@ -78,19 +82,19 @@ contract TokenSaleRemit is Test {
 
     function testRevertZeroAddress() public {
         vm.prank(REMITTER);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.InvalidUser.selector);
         fund.remit(address(0), OPT_TWO, F_TOKEN_2, 10);
     }
 
     function testRevertContractAddress() public {
         vm.prank(REMITTER);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.InvalidUser.selector);
         fund.remit(address(fund), OPT_TWO, F_TOKEN_2, 10);
     }
 
     function testReverMinRemit() public {
         vm.prank(REMITTER);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.InsufficientAmount.selector, 0, 1));
         fund.remit(ALICE, OPT_TWO, F_TOKEN_2, 0);
 
         assertEq(zero(ALICE, OPT_TWO, F_TOKEN_2), true);
@@ -99,7 +103,9 @@ contract TokenSaleRemit is Test {
 
     function testRevertNoCommitment() public {
         vm.prank(REMITTER);
-        vm.expectRevert();
+        vm.expectRevert(
+            abi.encodeWithSelector(ITokenSaleFund.InsufficientCommitment.selector, ALICE, OPT_TWO, F_TOKEN_2)
+        );
         fund.remit(ALICE, OPT_TWO, F_TOKEN_2, 10);
 
         assertEq(zero(ALICE, OPT_TWO, F_TOKEN_2), true);
@@ -114,7 +120,7 @@ contract TokenSaleRemit is Test {
 
         // reverts here for some reason..
         vm.mockCall(F_TOKEN_2, abi.encodeWithSelector(TRANSFER_SELECTOR), abi.encode(false));
-        vm.expectRevert();
+        vm.expectRevert(SafeTransferLib.TransferFailed.selector);
         fund.remit(ALICE, OPT_TWO, F_TOKEN_2, 10);
 
         // alice's bookkeeping still in place
@@ -190,7 +196,7 @@ contract TokenSaleRemit is Test {
         assertEq(t.remitSum, 0);
 
         // reverts on zero address
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.InvalidUser.selector);
         fund.remit(zeroAndAlice, OPT_TWO, F_TOKEN_1, amounts);
 
         t = fund.totals(ALICE, OPT_TWO, F_TOKEN_1);
@@ -222,7 +228,7 @@ contract TokenSaleRemit is Test {
         assertEq(t.remitSum, 0);
 
         // reverts on zero address
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.InvalidUser.selector);
         fund.remit(contractAndAlice, OPT_TWO, F_TOKEN_1, amounts);
 
         t = fund.totals(ALICE, OPT_TWO, F_TOKEN_1);
@@ -257,7 +263,7 @@ contract TokenSaleRemit is Test {
         assertEq(t.remitSum, 0);
 
         // reverts for min amount
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.InsufficientAmount.selector, 0, 1));
         fund.remit(users, OPT_TWO, F_TOKEN_1, wrongAmounts);
 
         t = fund.totals(BOB, OPT_TWO, F_TOKEN_1);
@@ -290,7 +296,7 @@ contract TokenSaleRemit is Test {
 
         // reverts for some reason at the token transfer
         vm.mockCall(F_TOKEN_1, abi.encodeWithSelector(TRANSFER_SELECTOR), abi.encode(false));
-        vm.expectRevert();
+        vm.expectRevert(SafeTransferLib.TransferFailed.selector);
         fund.remit(users, OPT_TWO, F_TOKEN_1, amounts);
 
         t = fund.totals(BOB, OPT_TWO, F_TOKEN_1);

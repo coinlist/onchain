@@ -2,7 +2,11 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
+import {IStopable} from "shared/stopable/IStopable.sol";
 import {FlyingTulipFund} from "flying-tulip/FlyingTulipFund.sol";
+import {IFlyingTulipFund} from "flying-tulip/IFlyingTulipFund.sol";
+import {ITokenSaleFund} from "sale/ITokenSaleFund.sol";
 
 contract FlyingTulipInvestFor is Test {
     FlyingTulipFund public fund;
@@ -36,28 +40,28 @@ contract FlyingTulipInvestFor is Test {
     function testRevertWhenStopped() public {
         // flying tulip used remit level for invest for
         fund.stop(fund.REMIT_LEVEL());
-        vm.expectRevert();
+        vm.expectRevert(IStopable.IsStopped.selector);
 
         fund.investFor(ALICE, OPT_ONE, F_TOKEN_1, 100);
     }
 
     function testRevertWhenNotRemitter() public {
         vm.prank(ALICE);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
 
         fund.investFor(ALICE, OPT_ONE, F_TOKEN_1, 100);
     }
 
     function testRevertWlNotSet() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(IFlyingTulipFund.ProofWlNotSet.selector);
 
         fund.investFor(ALICE, OPT_ONE, F_TOKEN_1, 100);
     }
 
     function testBatchRevertWlNotSet() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(IFlyingTulipFund.ProofWlNotSet.selector);
 
         fund.investFor(users, options, tokens, amounts);
     }
@@ -66,7 +70,7 @@ contract FlyingTulipInvestFor is Test {
         fund.setProofWl(pwl);
 
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.InsufficientAmount.selector, 10, 100));
 
         fund.investFor(ALICE, OPT_ONE, F_TOKEN_1, 10);
     }
@@ -75,7 +79,9 @@ contract FlyingTulipInvestFor is Test {
         fund.setProofWl(pwl);
 
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(
+            abi.encodeWithSelector(ITokenSaleFund.InsufficientCommitment.selector, ALICE, OPT_ONE, F_TOKEN_1)
+        );
 
         fund.investFor(ALICE, OPT_ONE, F_TOKEN_1, 100);
     }
@@ -109,7 +115,7 @@ contract FlyingTulipInvestFor is Test {
         fund.setProofWl(pwl);
 
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.NonEquivalentListLength.selector);
 
         fund.investFor(tooManyUsers, options, tokens, amounts);
     }

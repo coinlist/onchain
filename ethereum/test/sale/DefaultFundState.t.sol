@@ -2,6 +2,7 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
 
 contract TokenSaleFundDefault is Test {
@@ -60,7 +61,7 @@ contract TokenSaleFundDefault is Test {
 
     function testRevertStopWhenNotOwner() public {
         vm.prank(ALICE);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
 
         fund.stop(2);
     }

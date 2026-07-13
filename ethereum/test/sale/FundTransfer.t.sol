@@ -2,6 +2,8 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
 
 contract FundTransfer is Test {
@@ -20,13 +22,13 @@ contract FundTransfer is Test {
 
     function testRevertWhenNotOwner() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         fund.transfer(SOMEPLACE, F_TOKEN, 10);
     }
 
     function testRevertTransfer() public {
         vm.mockCall(F_TOKEN, abi.encodeWithSelector(TRANSFER_SELECTOR), abi.encode(false));
-        vm.expectRevert();
+        vm.expectRevert(SafeTransferLib.TransferFailed.selector);
         fund.transfer(SOMEPLACE, F_TOKEN, 10);
     }
 

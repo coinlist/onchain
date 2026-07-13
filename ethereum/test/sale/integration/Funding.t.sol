@@ -4,6 +4,7 @@ pragma solidity ^0.8.34;
 import {Test} from "forge-std/Test.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
+import {ITokenSaleFund} from "sale/ITokenSaleFund.sol";
 import {SaleTotal as Total} from "sale/Types.sol";
 
 contract FundingIntegration is Test {
@@ -79,7 +80,7 @@ contract FundingIntegration is Test {
         // alice allowance will now be 15
 
         // tries to commit 25 (allowance will fail)
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.CommitFailed.selector, ALICE, OPT, tokenAddr));
         fund.commit(ALICE, OPT, tokenAddr, 25);
         vm.stopPrank();
 
@@ -92,7 +93,7 @@ contract FundingIntegration is Test {
 
         // tries to commit 400 (balance will fail)
         vm.startPrank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.CommitFailed.selector, ALICE, OPT, tokenAddr));
         fund.commit(ALICE, OPT, tokenAddr, 400);
 
         // alice's bookkeeping is unchanged since last successful commit
@@ -102,7 +103,7 @@ contract FundingIntegration is Test {
         assertEq(fund.commitBalance(ALICE, OPT, tokenAddr), 35);
 
         // tries to remit more than her balance
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.InsufficientCommitment.selector, ALICE, OPT, tokenAddr));
         fund.remit(ALICE, OPT, tokenAddr, 100);
 
         // admin remits alice 15

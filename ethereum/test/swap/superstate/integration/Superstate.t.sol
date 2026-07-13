@@ -2,6 +2,7 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {Status, State} from "shared/operable/Types.sol";
 import {Preview} from "swap/Types.sol";
@@ -92,7 +93,7 @@ contract SuperState is Test {
         assert(mock.setShouldRevert(true));
         assert(mock.shouldRevert());
         // calculateAmount will now revert
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(bytes4(0x08c379a0), "womp womp"));
         ss.preview(address(inT), 100);
     }
 
@@ -119,7 +120,7 @@ contract SuperState is Test {
         assert(inT.approve(address(ss), 100000000));
 
         // minus a whitelisting step for the ss contract here, it should revert
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         vm.prank(ALICE);
         ss.swap(address(inT), 100000000, 100);
     }

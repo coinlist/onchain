@@ -2,6 +2,8 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {TokenSaleDist} from "sale/TokenSaleDist.sol";
 
@@ -22,26 +24,26 @@ contract DistTransfer is Test {
 
     function testRevertWhenNotOwner() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         // assert doesn't matter here...
         assertEq(dist.transfer(SOMEPLACE, 10), false);
     }
 
     function testRevertWhenNotOwnerExt() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         assertEq(dist.transfer(SOMEPLACE, A_TOKEN, 10), false);
     }
 
     function testRevertTransfer() public {
         vm.mockCall(address(token), abi.encodeWithSelector(TRANSFER_SELECTOR), abi.encode(false));
-        vm.expectRevert();
+        vm.expectRevert(SafeTransferLib.TransferFailed.selector);
         assertEq(dist.transfer(SOMEPLACE, 10), false);
     }
 
     function testRevertTransferExt() public {
         vm.mockCall(A_TOKEN, abi.encodeWithSelector(TRANSFER_SELECTOR), abi.encode(false));
-        vm.expectRevert();
+        vm.expectRevert(SafeTransferLib.TransferFailed.selector);
         dist.transfer(SOMEPLACE, A_TOKEN, 10);
     }
 

@@ -2,10 +2,10 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {TokenSwap} from "swap/TokenSwap.sol";
 import {Preview} from "swap/Types.sol";
-import {Ownable} from "solady/auth/Ownable.sol";
 
 // base contract is abstract, thus we must create child to deploy
 contract TSwap is TokenSwap {

@@ -2,7 +2,9 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {Registry} from "registry/Registry.sol";
+import {IRegistry} from "registry/IRegistry.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
 
 contract Registration is Test {
@@ -23,13 +25,13 @@ contract Registration is Test {
 
     function testRevertNotRegistrar() public {
         vm.prank(SOMEONE);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         reg.register(SALE_ID, 0, WHATEVER);
     }
 
     function testRevertNotContract() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(IRegistry.NotContract.selector, WHATEVER));
         reg.register(SALE_ID, 0, WHATEVER);
     }
 
@@ -48,13 +50,13 @@ contract Registration is Test {
         assertEq(reg.register(SALE_ID, kind, address(fund)), true);
         assertEq(reg.registered(SALE_ID, kind), address(fund));
 
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(IRegistry.NotZero.selector, SALE_ID, kind));
         reg.register(SALE_ID, kind, address(fund));
         vm.stopPrank();
     }
 
     function testRevertNotDeregistrar() public {
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         reg.deregister(SALE_ID, 0);
     }
 

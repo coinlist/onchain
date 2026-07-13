@@ -2,8 +2,10 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {TokenSaleDist} from "sale/TokenSaleDist.sol";
+import {ITokenSaleDist} from "sale/ITokenSaleDist.sol";
 
 contract DistDefault is Test {
     TestToken public token;
@@ -16,12 +18,12 @@ contract DistDefault is Test {
     }
 
     function testRevertZeroDistTokenAddr() public {
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleDist.InvalidAddress.selector);
         new TokenSaleDist(address(0), SALE_ID);
     }
 
     function testRevertNotContract() public {
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleDist.InvalidAddress.selector);
         new TokenSaleDist(SOMEONE, SALE_ID);
     }
 
@@ -34,7 +36,7 @@ contract DistDefault is Test {
         TokenSaleDist dist = new TokenSaleDist(address(token), SALE_ID);
 
         vm.prank(BOB);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
 
         dist.stop(2);
     }

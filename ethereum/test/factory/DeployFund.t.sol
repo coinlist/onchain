@@ -2,9 +2,12 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {Registry} from "registry/Registry.sol";
 import {Factory} from "factory/Factory.sol";
+import {IFactory} from "factory/IFactory.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
+import {ITokenSaleFund} from "sale/ITokenSaleFund.sol";
 
 contract DeployFund is Test {
     Registry public reg;
@@ -30,13 +33,13 @@ contract DeployFund is Test {
 
     function testRevertNotDeployer() public {
         vm.prank(SOMEONE);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         fact.deployFund(MINIMUM, SALE_ID);
     }
 
     function testRevertMinAmount() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.InsufficientAmount.selector, 0, 0));
         fact.deployFund(0, SALE_ID);
     }
 
@@ -72,7 +75,7 @@ contract DeployFund is Test {
 
     function testRevertAdminZero() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(IFactory.InvalidAddress.selector);
         fact.deployFund(MINIMUM, SALE_ID, address(0));
     }
 

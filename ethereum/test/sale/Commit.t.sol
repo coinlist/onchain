@@ -2,7 +2,10 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
+import {IStopable} from "shared/stopable/IStopable.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
+import {ITokenSaleFund} from "sale/ITokenSaleFund.sol";
 import {SaleTotal as Total} from "sale/Types.sol";
 
 contract TokenSaleCommit is Test {
@@ -39,7 +42,7 @@ contract TokenSaleCommit is Test {
 
     function testRevertWhenStopped() public {
         fund.stop(fund.COMMIT_LEVEL());
-        vm.expectRevert();
+        vm.expectRevert(IStopable.IsStopped.selector);
 
         fund.commit(ALICE, OPT_ONE, F_TOKEN_2, 10);
 
@@ -50,7 +53,7 @@ contract TokenSaleCommit is Test {
     function testBatchRevertWhenStopped() public {
         // can also use the LEVEL_SUM to indicate both commit/remit
         fund.stop(fund.COMMIT_LEVEL() + fund.REMIT_LEVEL());
-        vm.expectRevert();
+        vm.expectRevert(IStopable.IsStopped.selector);
 
         fund.commit(users, options, tokens, amounts);
 
@@ -63,7 +66,7 @@ contract TokenSaleCommit is Test {
     function testRevertWhenNotCommitter() public {
         vm.prank(BOB);
 
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         fund.commit(ALICE, OPT_ONE, F_TOKEN_1, 10);
 
         assertEq(zero(ALICE, OPT_ONE, F_TOKEN_1), true);
@@ -75,7 +78,7 @@ contract TokenSaleCommit is Test {
     function testBatchRevertWhenNotCommitter() public {
         vm.prank(BOB);
 
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         fund.commit(users, options, tokens, amounts);
 
         assertEq(zero(BOB, OPT_ONE, F_TOKEN_1), true);
@@ -86,19 +89,19 @@ contract TokenSaleCommit is Test {
 
     function testRevertZeroAddress() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.InvalidUser.selector);
         fund.commit(address(0), OPT_TWO, F_TOKEN_1, 2);
     }
 
     function testRevertContractAddress() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.InvalidUser.selector);
         fund.commit(address(fund), OPT_TWO, F_TOKEN_1, 2);
     }
 
     function testRevertMinCommit() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.InsufficientAmount.selector, 2, 5));
         fund.commit(ALICE, OPT_TWO, F_TOKEN_1, 2);
 
         assertEq(zero(ALICE, OPT_TWO, F_TOKEN_1), true);
@@ -166,7 +169,7 @@ contract TokenSaleCommit is Test {
         vm.prank(ADMIN);
         vm.mockCall(F_TOKEN_1, abi.encodeWithSelector(TRANSFER_FROM_SELECTOR), abi.encode(false));
 
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSaleFund.CommitFailed.selector, ALICE, OPT_TWO, F_TOKEN_1));
         fund.commit(ALICE, OPT_TWO, F_TOKEN_1, 10);
 
         assertEq(zero(ALICE, OPT_TWO, F_TOKEN_1), true);
@@ -251,7 +254,7 @@ contract TokenSaleCommit is Test {
 
     function testBatchRevertArrayLength() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(ITokenSaleFund.NonEquivalentListLength.selector);
 
         fund.commit(tooManyUsers, options, tokens, amounts);
     }

@@ -2,9 +2,11 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {Registry} from "registry/Registry.sol";
 import {Factory} from "factory/Factory.sol";
+import {IFactory} from "factory/IFactory.sol";
 import {TokenSaleFund} from "sale/TokenSaleFund.sol";
 import {TokenSaleDist} from "sale/TokenSaleDist.sol";
 
@@ -33,13 +35,13 @@ contract DeployDist is Test {
 
     function testRevertNotDeployer() public {
         vm.prank(SOMEONE);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         fact.deployDist(address(token), SALE_ID);
     }
 
     function testRevertDtoken() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(IFactory.InvalidAddress.selector);
         fact.deployDist(address(0), SALE_ID);
     }
 
@@ -75,7 +77,7 @@ contract DeployDist is Test {
 
     function testRevertAdminZero() public {
         vm.prank(ADMIN);
-        vm.expectRevert();
+        vm.expectRevert(IFactory.InvalidAddress.selector);
         fact.deployDist(address(token), SALE_ID, address(0));
     }
 

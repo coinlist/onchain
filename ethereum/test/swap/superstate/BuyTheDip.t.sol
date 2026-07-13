@@ -2,11 +2,14 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {IOperable} from "shared/operable/IOperable.sol";
 // import {console} from "forge-std/console.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {Preview, SwapTotal as Total} from "swap/Types.sol";
 import {Superstate} from "superstate/Superstate.sol";
+import {ITokenSwap} from "swap/ITokenSwap.sol";
 import {IDippable} from "superstate/IDippable.sol";
 
 // create a faux ss output token which implements IDippable
@@ -76,25 +79,25 @@ contract BuyTheDip is Test {
 
     function testRevertPaused() public {
         assert(ss.pause(ss.SWAP_LEVEL()));
-        vm.expectRevert(abi.encodeWithSignature("IsPaused(uint32)", ss.SWAP_LEVEL()));
+        vm.expectRevert(abi.encodeWithSelector(IOperable.IsPaused.selector, ss.SWAP_LEVEL()));
         ss.swap(address(inT), 100000000, 100);
     }
 
     function testRevertStopped() public {
         assert(ss.stop());
-        vm.expectRevert(abi.encodeWithSignature("IsStopped()"));
+        vm.expectRevert(IOperable.IsStopped.selector);
         ss.swap(address(inT), 100000000, 100);
     }
 
     function testRevertInputToken() public {
-        vm.expectRevert(abi.encodeWithSignature("InvalidAddress()"));
+        vm.expectRevert(ITokenSwap.InvalidAddress.selector);
         ss.swap(TIMMY, 100000000, 100);
     }
 
     function testRevertTransferFrom() public {
         vm.mockCall(address(inT), abi.encodeWithSelector(TRANSFER_FROM_SELECTOR), abi.encode(false));
         vm.mockCall(outT.dipContract(), abi.encodeWithSelector(CALCULATE_OUTPUT_SELECTOR), abi.encode([100000000, 100]));
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ITokenSwap.SwapFailed.selector, ALICE, address(inT)));
         vm.prank(ALICE);
         ss.swap(address(inT), 100000000, 100);
     }
@@ -103,7 +106,7 @@ contract BuyTheDip is Test {
         vm.mockCall(address(inT), abi.encodeWithSelector(TRANSFER_FROM_SELECTOR), abi.encode(true));
         vm.mockCall(address(inT), abi.encodeWithSelector(APPROVE_SELECTOR), abi.encode(false));
         vm.mockCall(outT.dipContract(), abi.encodeWithSelector(CALCULATE_OUTPUT_SELECTOR), abi.encode([100000000, 100]));
-        vm.expectRevert();
+        vm.expectRevert(SafeTransferLib.ApproveFailed.selector);
         vm.prank(ALICE);
         ss.swap(address(inT), 100000000, 100);
 
@@ -122,7 +125,7 @@ contract BuyTheDip is Test {
             abi.encode(99)
         );
 
-        vm.expectRevert(abi.encodeWithSignature("InsufficientAmount()"));
+        vm.expectRevert(ITokenSwap.InsufficientAmount.selector);
         vm.prank(ALICE);
         ss.swap(address(inT), 100000000, 100);
 
@@ -138,10 +141,10 @@ contract BuyTheDip is Test {
         vm.mockCallRevert(
             address(outT),
             abi.encodeWithSelector(BTD.buyTheDip.selector, MKT_ID, 100000000, 100, address(inT)),
-            abi.encodeWithSignature("Error(string)", "nope")
+            abi.encodeWithSelector(bytes4(0x08c379a0), "nope")
         );
 
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(bytes4(0x08c379a0), "nope"));
         vm.prank(ALICE);
         ss.swap(address(inT), 100000000, 100);
 

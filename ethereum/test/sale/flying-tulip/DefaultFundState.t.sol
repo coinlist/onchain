@@ -2,6 +2,7 @@
 pragma solidity ^0.8.30;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {FlyingTulipFund} from "flying-tulip/FlyingTulipFund.sol";
 
 contract FlyingTulipFundDefault is Test {
@@ -47,7 +48,7 @@ contract FlyingTulipFundDefault is Test {
 
     function testRevertWhenNotOwner() public {
         vm.prank(PUT_MANAGER);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
 
         fund.setProofWl(pwl);
     }

@@ -2,8 +2,10 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {Registry} from "registry/Registry.sol";
 import {Factory} from "factory/Factory.sol";
+import {IFactory} from "factory/IFactory.sol";
 
 contract FactoryDefault is Test {
     address public constant SOMEONE = 0x6060606060606060606060606060606060606060;
@@ -11,19 +13,19 @@ contract FactoryDefault is Test {
     bytes32 public constant SALE_ID = keccak256("abc-123");
 
     function testRevertZeroRegAddr() public {
-        vm.expectRevert();
+        vm.expectRevert(IFactory.InvalidAddress.selector);
         new Factory(address(0), BOB);
     }
 
     function testRevertNotContract() public {
-        vm.expectRevert();
+        vm.expectRevert(IFactory.InvalidAddress.selector);
         new Factory(SOMEONE, BOB);
     }
 
     function testRevertZeroDepOwner() public {
         Registry reg = new Registry();
 
-        vm.expectRevert();
+        vm.expectRevert(IFactory.InvalidAddress.selector);
         new Factory(address(reg), address(0));
     }
 
@@ -46,7 +48,7 @@ contract FactoryDefault is Test {
         Factory fact = new Factory(address(reg), BOB);
 
         vm.prank(BOB);
-        vm.expectRevert();
+        vm.expectRevert(Ownable.Unauthorized.selector);
         fact.setDeploymentOwner(SOMEONE);
     }
 
@@ -54,7 +56,7 @@ contract FactoryDefault is Test {
         Registry reg = new Registry();
         Factory fact = new Factory(address(reg), BOB);
 
-        vm.expectRevert();
+        vm.expectRevert(IFactory.InvalidAddress.selector);
         fact.setDeploymentOwner(address(0));
     }
 

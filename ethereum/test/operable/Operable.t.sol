@@ -2,6 +2,8 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
+import {IOperable} from "shared/operable/IOperable.sol";
 import {State, Status} from "shared/operable/Types.sol";
 import {OPT} from "./OPT.sol";
 
@@ -22,7 +24,7 @@ contract OPTest is Test {
     }
 
     function testPauseRevertNotOwner() public {
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        vm.expectRevert(Ownable.Unauthorized.selector);
         vm.prank(SOMEONE);
         op.pause(2);
     }
@@ -34,7 +36,7 @@ contract OPTest is Test {
     }
 
     function testStopRevertNotOwner() public {
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        vm.expectRevert(Ownable.Unauthorized.selector);
         vm.prank(SOMEONE);
         op.stop();
     }
@@ -60,7 +62,7 @@ contract OPTest is Test {
         assertEq(uint32(stat.flags), op.FOO_LEVEL());
 
         // does not allow when paused
-        vm.expectRevert(abi.encodeWithSignature("IsPaused(uint32)", op.FOO_LEVEL()));
+        vm.expectRevert(abi.encodeWithSelector(IOperable.IsPaused.selector, op.FOO_LEVEL()));
         op.setFoo(99);
         assertEq(op.foo(), 42);
 
@@ -82,7 +84,7 @@ contract OPTest is Test {
 
         // cannot be set when stopped
         assert(op.stop());
-        vm.expectRevert(abi.encodeWithSignature("IsStopped()"));
+        vm.expectRevert(IOperable.IsStopped.selector);
         op.setFoo(13);
         assertEq(op.foo(), 99);
 
@@ -102,7 +104,7 @@ contract OPTest is Test {
         assert(op.pause(op.BAR_LEVEL()));
 
         // does not allow when paused
-        vm.expectRevert(abi.encodeWithSignature("IsPaused(uint32)", op.BAR_LEVEL()));
+        vm.expectRevert(abi.encodeWithSelector(IOperable.IsPaused.selector, op.BAR_LEVEL()));
         op.setBar(99);
         assertEq(op.bar(), 42);
 
@@ -119,7 +121,7 @@ contract OPTest is Test {
 
         // cannot be set when stopped
         assert(op.stop());
-        vm.expectRevert(abi.encodeWithSignature("IsStopped()"));
+        vm.expectRevert(IOperable.IsStopped.selector);
         op.setBar(13);
         assertEq(op.bar(), 99);
     }
@@ -130,11 +132,11 @@ contract OPTest is Test {
         assertEq(op.paused(), both);
 
         // since you are calling setFoo it will throw with FOO_LEVEL
-        vm.expectRevert(abi.encodeWithSignature("IsPaused(uint32)", op.FOO_LEVEL()));
+        vm.expectRevert(abi.encodeWithSelector(IOperable.IsPaused.selector, op.FOO_LEVEL()));
         op.setFoo(37);
 
         // now BAR_LEVEL will be thrown
-        vm.expectRevert(abi.encodeWithSignature("IsPaused(uint32)", op.BAR_LEVEL()));
+        vm.expectRevert(abi.encodeWithSelector(IOperable.IsPaused.selector, op.BAR_LEVEL()));
         op.setBar(37);
 
         assertEq(op.foo(), 0);

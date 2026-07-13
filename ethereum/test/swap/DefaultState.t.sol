@@ -2,8 +2,10 @@
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
+import {Ownable} from "solady/auth/Ownable.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {TokenSwap} from "swap/TokenSwap.sol";
+import {ITokenSwap} from "swap/ITokenSwap.sol";
 import {Preview} from "swap/Types.sol";
 
 // base contract is abstract, thus we must create child to deploy
@@ -34,12 +36,12 @@ contract SwapDefault is Test {
     }
 
     function testRevertZeroOutToken() public {
-        vm.expectRevert();
+        vm.expectRevert(ITokenSwap.InvalidAddress.selector);
         new DSwap(address(0), SALE_ID);
     }
 
     function testRevertNotContractOutToken() public {
-        vm.expectRevert();
+        vm.expectRevert(ITokenSwap.InvalidAddress.selector);
         new DSwap(SOMEONE, SALE_ID);
     }
 
@@ -65,7 +67,7 @@ contract SwapDefault is Test {
     function testRevertPauseWhenNotOwner() public {
         DSwap swap = new DSwap(address(outT), SALE_ID);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        vm.expectRevert(Ownable.Unauthorized.selector);
         vm.prank(SOMEONE);
 
         swap.pause(2);
@@ -74,7 +76,7 @@ contract SwapDefault is Test {
     function testRevertStopWhenNotOwner() public {
         DSwap swap = new DSwap(address(outT), SALE_ID);
 
-        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        vm.expectRevert(Ownable.Unauthorized.selector);
         vm.prank(SOMEONE);
 
         swap.stop();
