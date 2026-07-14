@@ -1,0 +1,5 @@
+
+# foundry and hardhat
+cache/
+dependencies/
+out/

@@ -1,0 +1,54 @@
+name: ⟠Ethereum quality check
+on:
+  pull_request:
+    paths:
+      - "ethereum/**"
+      - ".github/workflows/ethereum_ci.yaml"
+  workflow_dispatch:
+    inputs:
+      verbose:
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+env:
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    runs-on: ubuntu-26.04-arm
+    defaults:
+      run:
+        working-directory: ethereum
+    steps:
+      - name: 🏧Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: 📦Cache soldeer
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ethereum/dependencies
+          key: ${{ runner.os }}-soldeer-${{ hashFiles('ethereum/soldeer.lock') }}
+          restore-keys: ${{ runner.os }}-soldeer-
+
+      - name: ⚒️Setup foundry
+        uses: foundry-rs/foundry-toolchain@b00af27efadbc7b4ca8b82abbd903b17cc874d2a # v1.9.0
+        with:
+          # Due to the setup of this repo, the default cache doesn't quite work correctly
+          cache: false
+
+      - name: 💿Install
+        run: forge soldeer install
+
+      - name: 🎨Check formatting
+        run: forge fmt --check
+
+      - name: 🏗️Build
+        run: forge build --sizes
+
+      - name: 🧪Tests
+        run: forge test ${{ inputs.verbose && '-vvv' || '' }}

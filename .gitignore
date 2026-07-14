@@ -1,0 +1,17 @@
+# agent state
+.antigravitycli
+.claude
+.code
+branches
+tmp/
+
+# secrets / local env
+.env
+.env*
+
+# Project-level workspace overrides
+.vscode/
+.idea/
+*.iml
+.DS_Store
+Thumbs.db
