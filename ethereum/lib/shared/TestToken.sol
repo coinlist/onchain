@@ -26,3 +26,11 @@ contract TestToken is ERC20 {
         return true;
     }
 }
+
+contract TestStable is TestToken {
+  constructor(string memory n, string memory s) TestToken(n,s) {}
+
+  function decimals() public pure override returns (uint8) {
+    return 6;
+  }
+}
