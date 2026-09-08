@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.34;
 
 import {IOperable} from "./IOperable.sol";
@@ -28,7 +28,7 @@ abstract contract Operable is IOperable {
     return stat;
   }
 
-  /// @dev override in child contract in order to set appropriate access control
+  /// @dev override/extend in child contract in order to set appropriate enforcement of access control
   function pause(uint32 level) public virtual returns (bool) {
     uint32 prev = paused;
 

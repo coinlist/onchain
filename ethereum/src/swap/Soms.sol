@@ -105,7 +105,11 @@ abstract contract Soms is ISoms, Operable, Ownable {
         return true;
     }
 
+    /// @dev accepts 0 to unpause, or any bitmask containing SWAP_LEVEL to pause swaps
     function pause(uint32 level) public override onlyOwner returns (bool) {
+        // invariant: passed level is a value this contract honors (0, SWAP_LEVEL (or functionally equivalent))
+        require(level == 0 || (SWAP_LEVEL & level) != 0, InvalidAmount());
+
         return super.pause(level);
     }
 
