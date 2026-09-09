@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 
 import {Side} from "swap/Types.sol";
@@ -6,9 +6,9 @@ import {Side} from "swap/Types.sol";
 /**
  * @notice Quote struct that is signed by the attestation signer
  * @dev    This struct must exactly match https://etherscan.io/address/0x2c158bc456e027b2affccadf1bdbd9f5fc4c5c8c#code#F13#L44
- * @param  attestationId  The ID of the quote
  * @param  chainId        The chain ID of the quote is intended for
- * @param  userId         The user ID the quote is intended for
+ * @param  attestationId  The ID of the quote
+ * @param  userId         The user ID of CoinList's integration contract
  * @param  asset          The address of the GM token being bought or sold
  * @param  price          The price of the GM token in USD with 18 decimals
  * @param  quantity       The quantity of GM tokens being bought or sold
