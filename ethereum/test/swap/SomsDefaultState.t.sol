@@ -55,6 +55,11 @@ contract SomsDefault is Test {
         assertEq(swap.inputTokens(address(inT)), false);
     }
 
+    function testRevertRenounceOwnership() public {
+        vm.expectRevert(abi.encodeWithSignature("Disabled()"));
+        swap.renounceOwnership();
+    }
+
     function testRevertSetInputNotOwner() public {
         vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
         vm.prank(SOMEONE);

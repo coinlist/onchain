@@ -82,6 +82,11 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         }
     }
 
+    /// @notice expose the EIP712 _domainSeparator for testing/debugging
+    function domainSeparator() external view returns (bytes32) {
+        return super._domainSeparator();
+    }
+
     // ********************** Owner API **********************************************************/
 
     /// @dev set the address a swap verification request should ecrecover. owner only
@@ -90,11 +95,6 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         coinList = addr;
 
         return true;
-    }
-
-    /// @dev utility to fetch the domainSeparator for debugging if needed. owner only
-    function domainSeparator() external view onlyOwner returns (bytes32) {
-        return _domainSeparator();
     }
 
     // **************** Internals  ***************************************************
@@ -231,11 +231,6 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
     function _domainNameAndVersion() internal pure override returns (string memory name, string memory version) {
         name = "CoinList";
         version = "1";
-    }
-
-    /// @dev overridden to allow owner verification of domain separator
-    function _domainSeparator() internal view override returns (bytes32) {
-        return super._domainSeparator();
     }
 
     // **************** Events  ******************************************************
