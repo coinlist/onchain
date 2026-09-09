@@ -27,10 +27,16 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         require(validAddr(_coinList), InvalidAddress());
         // invariant: _manager is a valid address and a deployed contract
         require(validAddr(_manager) && isContract(_manager), InvalidAddress());
+
+        emit CoinListUpdated(coinList, _coinList);
         coinList = _coinList;
+
         manager = _manager;
+
         // NOTE: USDC is accepted
-        inputTokens[0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48] = true;
+        address usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+        emit InputTokenUpdated(usdc, inputTokens[usdc], true);
+        inputTokens[usdc] = true;
     }
 
     // **************** Public API ***************************************************
@@ -80,7 +86,9 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
 
     /// @dev set the address a swap verification request should ecrecover. owner only
     function setCoinListAddress(address addr) external onlyOwner returns (bool) {
+        emit CoinListUpdated(coinList, addr);
         coinList = addr;
+
         return true;
     }
 
@@ -229,4 +237,9 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
     function _domainSeparator() internal view override returns (bytes32) {
         return super._domainSeparator();
     }
+
+    // **************** Events  ******************************************************
+
+    /// @notice Emitted when the coinlist signer address is updated
+    event CoinListUpdated(address prev, address next);
 }
