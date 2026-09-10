@@ -174,8 +174,7 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         // transfer the asset to the caller
         SafeTransferLib.safeTransfer(quote.asset, msg.sender, val);
 
-        // inputAmount is inclusive of fee here
-        emit Swapped(msg.sender, token, quote.asset, amount, val, quote.price);
+        emit Swapped(msg.sender, token, quote.asset, quote.attestationId, quote.side, amount, _fee, val);
 
         return val;
     }
@@ -221,8 +220,7 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         // transfer caller their redeemed token - fee
         SafeTransferLib.safeTransfer(token, msg.sender, output);
 
-        // output amount is exclusive of fee here
-        emit Swapped(msg.sender, quote.asset, token, quote.quantity, output, quote.price);
+        emit Swapped(msg.sender, quote.asset, token, quote.attestationId, quote.side, quote.quantity, _fee, val);
 
         return output;
     }

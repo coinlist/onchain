@@ -9,12 +9,14 @@ interface ISoms {
     /// @notice Emitted upon a successful swap
     /// @dev fee prices are included in buy side inputs and excluded from sell side outputs
     event Swapped(
-        address indexed user,
+        address user,
         address indexed inputToken, // address of stable or asset
         address indexed outputToken, // address of stable or asset
+        uint256 id,
+        Side indexed side,
         uint256 inputAmount, // amount of stable or asset
-        uint256 outputAmount, // amount of stable or asset,
-        uint256 assetPrice // price of the asset in this tx
+        uint256 fee,
+        uint256 outputAmount // amount of stable or asset,
     );
 
     /// @notice Emitted when contract owner transfers input token balance (from fees) elsewhere
