@@ -36,8 +36,7 @@ contract OndoIntegration is Test {
         // any quote is for stockz as an asset
         assert(a.setRwa(address(stockz)));
 
-        ondo = new Ondo(SALE_ID, a.addr(), address(mock));
-        ondo.setInputToken(address(usdz), true);
+        ondo = new Ondo(SALE_ID, a.addr(), address(mock), address(usdz));
 
         // Alice approves ondo to pull funds
         vm.prank(ALICE);

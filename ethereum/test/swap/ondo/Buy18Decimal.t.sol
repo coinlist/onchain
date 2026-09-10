@@ -32,9 +32,8 @@ contract OndoBuy18 is Test {
         inT = new TestToken("USDon", "USDN");
         man = new Manager();
         a = new Assembler();
-        ondo = new Ondo(keccak256("justincase"), a.addr(), address(man));
         // use USDZ as an approved input
-        ondo.setInputToken(address(inT), true);
+        ondo = new Ondo(keccak256("justincase"), a.addr(), address(man), address(inT));
     }
 
     function testRevertOverspend() public {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.34;
 
 import {Side, OptimizedSwapTotal} from "./Types.sol";
@@ -48,7 +48,7 @@ interface ISoms {
     function setBps(Side side, uint16 points) external returns (bool);
 
     /// @notice given a token address and a boolean representing whitelist status, set those values
-    /// @dev reverts if address is invalid, or token decimals > 18
+    /// @dev reverts (when adding) if address is invalid, or token decimals > 18
     function setInputToken(address token, bool val) external returns (bool);
 
     /// @notice given a token, an address and an amount transfer the token, available to owner only
