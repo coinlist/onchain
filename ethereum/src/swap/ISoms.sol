@@ -67,4 +67,6 @@ interface ISoms {
     error InvalidDecimals();
     /// @dev the swap call has failed
     error SwapFailed(address user, address token);
+    /// @dev the called method is disabled
+    error Disabled();
 }

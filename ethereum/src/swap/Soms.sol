@@ -105,6 +105,7 @@ abstract contract Soms is ISoms, Operable, Ownable {
         return true;
     }
 
+    /// @notice used either to pause/unpause for internal purposes or respond to transient upstream outages
     /// @dev accepts 0 to unpause, or any bitmask containing SWAP_LEVEL to pause swaps
     function pause(uint32 level) public override onlyOwner returns (bool) {
         // invariant: passed level is a value this contract honors (0, SWAP_LEVEL (or functionally equivalent))
@@ -113,8 +114,14 @@ abstract contract Soms is ISoms, Operable, Ownable {
         return super.pause(level);
     }
 
+    /// @notice a permanent decomission of this contract
     function stop() public override onlyOwner returns (bool) {
         return super.stop();
+    }
+
+    /// @dev ownership of a SOMS will never be renounced
+    function renounceOwnership() public payable override onlyOwner {
+        revert Disabled();
     }
 
     // ***************** Utility *****************************************************
