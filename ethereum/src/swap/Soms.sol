@@ -83,12 +83,15 @@ abstract contract Soms is ISoms, Operable, Ownable {
         return true;
     }
 
-    function setInputToken(address token, bool val) external onlyOwner returns (bool) {
-        // invariant: address is valid
-        require(validAddr(token) && isContract(token), InvalidAddress());
+    function setInputToken(address token, bool val) public onlyOwner returns (bool) {
+        // run constraints if adding
+        if (val) {
+            // invariant: address is valid
+            require(validAddr(token) && isContract(token), InvalidAddress());
 
-        // invariant: cannot have > 18 decimals
-        require(IERC20(token).decimals() <= 18, InvalidDecimals());
+            // invariant: cannot have > 18 decimals
+            require(IERC20(token).decimals() <= 18, InvalidDecimals());
+        }
 
         emit InputTokenUpdated(token, inputTokens[token], val);
 

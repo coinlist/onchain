@@ -24,9 +24,8 @@ contract OndoSwap is Test {
         inT = new TestStable("usdz", "USDZ");
         man = new Manager();
         a = new Assembler();
-        swap = new Ondo(keccak256("yolo"), ALICE, address(man));
         // use USDZ as an approved input
-        swap.setInputToken(address(inT), true);
+        swap = new Ondo(keccak256("yolo"), ALICE, address(man), address(inT));
     }
 
     function testRevertVerify() public {

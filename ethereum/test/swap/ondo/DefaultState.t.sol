@@ -15,7 +15,14 @@ contract OndoDefaultState is Test {
 
     function setUp() public {
         man = new Manager();
-        swap = new Ondo(keccak256("yolo"), ALICE, address(man));
+        // can pass zero address for no input token at launch
+        swap = new Ondo(keccak256("yolo"), ALICE, address(man), address(0));
+    }
+
+    function testRevertTokenConst() public {
+        // alice obvs is not a valid token
+        vm.expectRevert();
+        new Ondo(keccak256("yolo"), ALICE, address(man), ALICE);
     }
 
     function testRequestTypeHash() public {

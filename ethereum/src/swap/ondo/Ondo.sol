@@ -22,7 +22,7 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
     /// @dev the address of a designated GMTokenManager
     address public manager;
 
-    constructor(bytes32 swapId, address _coinList, address _manager) Soms(swapId) {
+    constructor(bytes32 swapId, address _coinList, address _manager, address token) Soms(swapId) {
         // invariant: _coinList is a valid address
         require(validAddr(_coinList), InvalidAddress());
         // invariant: _manager is a valid address and a deployed contract
@@ -33,10 +33,10 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
 
         manager = _manager;
 
-        // NOTE: USDC is accepted
-        address usdc = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
-        emit InputTokenUpdated(usdc, inputTokens[usdc], true);
-        inputTokens[usdc] = true;
+        // if an initially whitelisted token is given
+        if (token != address(0)) {
+            setInputToken(token, true);
+        }
     }
 
     // **************** Public API ***************************************************
