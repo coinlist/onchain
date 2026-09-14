@@ -8,7 +8,7 @@ import {State, Status} from "shared/operable/Types.sol";
 contract Manager {}
 
 contract OndoDefaultState is Test {
-    bytes32 public constant REQ_TYPE_HASH = 0x0cc904b971527963aceb93b8a37a552af0ad75836275b27556fef1c4763c07ac;
+    bytes32 public constant REQ_TYPE_HASH = 0xbc80a36b87b5bb1806c854856f3085b7cf8ffe21a3f92f0b348be549b8f9501f;
     address public constant ALICE = 0x6060606060606060606060606060606060606060;
     Manager man;
     Ondo swap;

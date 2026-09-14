@@ -12,8 +12,7 @@ import {Side, OptimizedSwapTotal} from "./Types.sol";
 /*
  * @notice Storage.Optimized.Multi.Swap.
  * @dev this is similar to TokenSwap, but has a few key differences
- * the storage footprint for Total struct has been reduced to a single slot
- * has no global Total storage (TODO: discuss)
+ * the storage footprint for Total struct has been reduced to 2 slots
  * there are no parent-defined swap, authorized or preview methods
  * there is a Side (Buy, Sell)
  * fee bps amounts are separate per Side
@@ -30,7 +29,7 @@ abstract contract Soms is ISoms, Operable, Ownable {
     uint16[2] public bps;
     /// @dev tokens allowed as input
     mapping(address => bool) public inputTokens;
-    // @dev user => inputToken => outputToken => totals
+    // @dev owner => inputToken => outputToken => totals
     mapping(address => mapping(address => mapping(address => OptimizedSwapTotal))) internal _totals;
 
     constructor(bytes32 swapId) {
@@ -42,6 +41,10 @@ abstract contract Soms is ISoms, Operable, Ownable {
 
     function tokenBalance(address token) external view returns (uint256) {
         return IERC20(token).balanceOf(address(this));
+    }
+
+    function totals(address input, address output) external view returns (OptimizedSwapTotal memory) {
+        return _totals[address(this)][input][output];
     }
 
     function totals(address user, address input, address output) external view returns (OptimizedSwapTotal memory) {
@@ -125,6 +128,22 @@ abstract contract Soms is ISoms, Operable, Ownable {
     /// @dev ownership of a SOMS will never be renounced
     function renounceOwnership() public payable override onlyOwner {
         revert Disabled();
+    }
+
+    function resetTotals(address input, address output) external onlyOwner returns (bool) {
+        return resetTotals(address(this), input, output);
+    }
+
+    function resetTotals(address user, address input, address output) public onlyOwner returns (bool) {
+        OptimizedSwapTotal storage data = _totals[user][input][output];
+        data.inputSum = 0;
+        data.feeSum = 0;
+        data.outputSum = 0;
+        data.count = 0;
+
+        emit TotalsReset(user, input, output);
+
+        return true;
     }
 
     // ***************** Utility *****************************************************

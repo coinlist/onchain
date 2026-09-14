@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.34;
 
 /// @notice differentiation of swap types
@@ -15,13 +15,12 @@ struct SwapTotal {
     uint256 count;
 }
 
-/// @notice storage optimized multi-swap totals struct made to fit in a single slot
-/// @dev count is allowed to be rolled over to 0 as its only used to sync signatures in the short term
+/// @notice storage optimized multi-swap totals struct made to fit in 2 slots
 struct OptimizedSwapTotal {
-    uint88 inputSum;
-    uint72 feeSum;
-    uint88 outputSum;
-    uint8 count;
+    uint128 inputSum;
+    uint128 feeSum;
+    uint128 outputSum;
+    uint128 count;
 }
 
 /// @notice input, fee and output amounts, returned from the preview method
