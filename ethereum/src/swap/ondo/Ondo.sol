@@ -14,7 +14,7 @@ import {IManager} from "./IManager.sol";
 
 contract Ondo is Soms, ReentrancyGuard, EIP712 {
     bytes32 public constant VERIFY_REQUEST = keccak256(
-        "VerifyRequest(uint8 side,address inputToken,address outputToken,address sender,uint64 nonce,uint256 expiry,uint256 amount)"
+        "VerifyRequest(uint8 side,address inputToken,address outputToken,address sender,uint256 nonce,uint256 expiry,uint256 amount)"
     );
 
     /// @dev the address we expect to be ecrecovered
@@ -58,27 +58,34 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         // invariant: the given token address is an approved input (applies equally to Sell side output)
         require(inputTokens[token], InvalidAddress());
 
-        Total storage data;
+        Total storage userData;
+        Total storage conData;
 
         if (quote.side == Side.Buy) {
-            data = _totals[msg.sender][token][quote.asset];
+            userData = _totals[msg.sender][token][quote.asset];
+            conData = _totals[address(this)][token][quote.asset];
             // invariant: cSig ecrecovers our set coinlist address
             verify(
-                VerifyRequest(quote.side, token, quote.asset, msg.sender, uint64(data.count), quote.expiration, amount),
+                VerifyRequest(
+                    quote.side, token, quote.asset, msg.sender, uint256(userData.count), quote.expiration, amount
+                ),
                 cSig
             );
 
             // Buy -> returns actual minted quantity of the RWA
-            return buy(quote, oSig, token, amount, data);
+            return buy(quote, oSig, token, amount, userData, conData);
         } else {
-            data = _totals[msg.sender][quote.asset][token];
+            userData = _totals[msg.sender][quote.asset][token];
+            conData = _totals[address(this)][quote.asset][token];
             verify(
-                VerifyRequest(quote.side, quote.asset, token, msg.sender, uint64(data.count), quote.expiration, amount),
+                VerifyRequest(
+                    quote.side, quote.asset, token, msg.sender, uint256(userData.count), quote.expiration, amount
+                ),
                 cSig
             );
 
             // Sell -> returns actual redeemed amount of user selected receive token
-            return sell(quote, oSig, token, amount, data);
+            return sell(quote, oSig, token, amount, userData, conData);
         }
     }
 
@@ -120,10 +127,14 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
     }
 
     /// @dev abstracted logic for buy side swaps
-    function buy(Quote calldata quote, bytes calldata oSig, address token, uint256 amount, Total storage data)
-        internal
-        returns (uint256)
-    {
+    function buy(
+        Quote calldata quote,
+        bytes calldata oSig,
+        address token,
+        uint256 amount,
+        Total storage userData,
+        Total storage conData
+    ) internal returns (uint256) {
         // buy side fee is taken on the input token amount
         (uint256 _fee, uint256 input) = super.fee(quote.side, amount);
 
@@ -145,14 +156,18 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
             revert SwapFailed(msg.sender, token);
         }
 
-        // this can roll over as it is only ever used to synchronize signatures from CL backend
-        data.count = data.count == type(uint8).max ? 0 : data.count + 1;
+        userData.count += 1;
+        conData.count += 1;
 
         // optimized bookkeeping for the caller
         // forge-lint: disable-next-line(unsafe-typecast)
-        data.inputSum += uint88(input); // sum of stable given minus fees
+        userData.inputSum += uint128(input); // sum of stable given minus fees
         // forge-lint: disable-next-line(unsafe-typecast)
-        data.feeSum += uint72(_fee); // sum of fees paid in above stable
+        conData.inputSum += uint128(input);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        userData.feeSum += uint128(_fee); // sum of fees paid in above stable
+        // forge-lint: disable-next-line(unsafe-typecast)
+        conData.feeSum += uint128(_fee);
 
         // approve the manager to pull our input token, reverts on fail
         SafeTransferLib.safeApproveWithRetry(token, manager, input);
@@ -169,7 +184,9 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
 
         // buy side output sums are the actual minted amounts
         // forge-lint: disable-next-line(unsafe-typecast)
-        data.outputSum += uint88(val);
+        userData.outputSum += uint128(val);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        conData.outputSum += uint128(val);
 
         // transfer the asset to the caller
         SafeTransferLib.safeTransfer(quote.asset, msg.sender, val);
@@ -180,20 +197,27 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
     }
 
     /// @dev abstracted logic for sell side swaps
-    function sell(Quote calldata quote, bytes calldata oSig, address token, uint256 amount, Total storage data)
-        internal
-        returns (uint256)
-    {
+    function sell(
+        Quote calldata quote,
+        bytes calldata oSig,
+        address token,
+        uint256 amount,
+        Total storage userData,
+        Total storage conData
+    ) internal returns (uint256) {
         // pull RWA quote.quantity from user
         if (!SafeTransferLib.trySafeTransferFrom(quote.asset, msg.sender, address(this), quote.quantity)) {
             revert SwapFailed(msg.sender, quote.asset);
         }
 
-        data.count = data.count == type(uint8).max ? 0 : data.count + 1;
+        userData.count += 1;
+        conData.count += 1;
 
         // sell side input sums are quote.quantity
         // forge-lint: disable-next-line(unsafe-typecast)
-        data.inputSum += uint88(quote.quantity);
+        userData.inputSum += uint128(quote.quantity);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        conData.inputSum += uint128(quote.quantity);
 
         // approve the manager to pull our RWA token, reverts on fail
         SafeTransferLib.safeApproveWithRetry(quote.asset, manager, quote.quantity);
@@ -210,19 +234,24 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
 
         // sell fee is a simple muldiv with the set basis point percentage on the redeemed amount
         uint256 _fee = super.bpp(quote.side, val);
-        uint256 output = val - _fee;
+
+        // "output" value is (val - _fee)
 
         // forge-lint: disable-next-line(unsafe-typecast)
-        data.feeSum += uint72(_fee);
+        userData.feeSum += uint128(_fee);
         // forge-lint: disable-next-line(unsafe-typecast)
-        data.outputSum += uint88(output);
+        conData.feeSum += uint128(_fee);
+        // forge-lint: disable-next-line(unsafe-typecast)
+        userData.outputSum += uint128((val - _fee));
+        // forge-lint: disable-next-line(unsafe-typecast)
+        conData.outputSum += uint128((val - _fee));
 
         // transfer caller their redeemed token - fee
-        SafeTransferLib.safeTransfer(token, msg.sender, output);
+        SafeTransferLib.safeTransfer(token, msg.sender, (val - _fee));
 
         emit Swapped(msg.sender, quote.asset, token, quote.attestationId, quote.side, quote.quantity, _fee, val);
 
-        return output;
+        return val - _fee;
     }
 
     /// @dev required override for solady's EIP712 class

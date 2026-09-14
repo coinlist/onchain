@@ -67,6 +67,13 @@ contract SomsDefault is Test {
         swap.setInputToken(address(inT), true);
     }
 
+    function testRevertResetTotalsNotOwner() public {
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        vm.prank(SOMEONE);
+
+        swap.resetTotals(SOMEONE, address(inT), address(0));
+    }
+
     function testRevertInputDecimals() public {
         TooManyD t = new TooManyD("tooManyD", "tmd");
 

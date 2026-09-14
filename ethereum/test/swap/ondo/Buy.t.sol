@@ -198,5 +198,13 @@ contract OndoBuy is Test {
         assertEq(total.inputSum, input);
         assertEq(total.outputSum, minted);
         assertEq(total.feeSum, 990100);
+
+        // IF a total was ever over-saturated the owner could reset it to default zero
+        assert(ondo.resetTotals(ALICE, address(inT), q.asset));
+        total = ondo.totals(ALICE, address(inT), q.asset);
+        assertEq(total.count, 0);
+        assertEq(total.inputSum, 0);
+        assertEq(total.outputSum, 0);
+        assertEq(total.feeSum, 0);
     }
 }

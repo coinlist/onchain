@@ -28,11 +28,18 @@ interface ISoms {
     /// @notice emitted on any value change to the input tokens whitelist
     event InputTokenUpdated(address indexed token, bool prev, bool next);
 
+    /// @notice emitted if owner resets Totals at a given path
+    event TotalsReset(address indexed user, address input, address output);
+
     // ********************* API *****************************************************
 
     /// @notice return this contract's balance of the given token
     /// @dev used for checking balances of input tokens
     function tokenBalance(address token) external view returns (uint256);
+
+    /// @notice given an input/output pair, return the global totals
+    /// @dev the number's decimal format is that of the token itself
+    function totals(address input, address output) external view returns (OptimizedSwapTotal memory);
 
     /// @notice given a user and input/output pair, return their totals
     /// @dev the number's decimal format is that of the token itself
@@ -56,6 +63,12 @@ interface ISoms {
     /// @notice given a token, an address and an amount transfer the token, available to owner only
     /// @dev reverts on safeTransfer error
     function transfer(address to, address token, uint256 amount) external returns (bool);
+
+    /// @notice given an input/output token pair, reset the global contract totals
+    function resetTotals(address input, address output) external returns (bool);
+
+    /// @notice given a user and input/output token pair, reset the storage totals at that location. Owner only
+    function resetTotals(address user, address input, address output) external returns (bool);
 
     // ********************* Errors **************************************************
 

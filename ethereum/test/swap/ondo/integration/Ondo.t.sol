@@ -190,5 +190,36 @@ contract OndoIntegration is Test {
         // the bpp value in sell is calculated against the amount redeemed by the mock (in this test)
         // the mock contracts 25e18 (quantity*price) down to 6 digits 25e6 which the .5% fee will be 125000
         assertEq(t.feeSum, (ondo.bpp(Side.Sell, 25e6)));
+
+        // ******************** GLOBAL TOTALS ******************************************************************************
+
+        // for the buy sides
+        t = ondo.totals(address(usdz), address(stockz));
+        assertEq(t.count, 2);
+        assertEq(t.inputSum, 69831432);
+        assertEq(t.feeSum, 168568);
+        assertEq(t.outputSum, 19915716000000000000);
+
+        // for the sell sides
+        t = ondo.totals(address(stockz), address(usdz));
+        assertEq(t.count, 2);
+        assertEq(t.inputSum, 15000000000000000000);
+        assertEq(t.feeSum, 125000);
+        assertEq(t.outputSum, 84875000);
+
+        // both sides can be reset
+        assert(ondo.resetTotals(address(usdz), address(stockz)));
+        t = ondo.totals(address(usdz), address(stockz));
+        assertEq(t.count, 0);
+        assertEq(t.inputSum, 0);
+        assertEq(t.feeSum, 0);
+        assertEq(t.outputSum, 0);
+
+        assert(ondo.resetTotals(address(stockz), address(usdz)));
+        t = ondo.totals(address(stockz), address(usdz));
+        assertEq(t.count, 0);
+        assertEq(t.inputSum, 0);
+        assertEq(t.feeSum, 0);
+        assertEq(t.outputSum, 0);
     }
 }

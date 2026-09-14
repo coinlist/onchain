@@ -29,14 +29,13 @@ struct Quote {
 }
 
 /// @notice EIP-712 Type Hash for Ninshuber prepared payloads
-/// @dev result: 0x0cc904b971527963aceb93b8a37a552af0ad75836275b27556fef1c4763c07ac
-
+/// @dev result: 0xbc80a36b87b5bb1806c854856f3085b7cf8ffe21a3f92f0b348be549b8f9501f
 struct VerifyRequest {
     Side side;
     address inputToken;
     address outputToken;
     address sender;
-    uint64 nonce;
+    uint256 nonce;
     uint256 expiry;
     uint256 amount;
 }
