@@ -8,6 +8,7 @@ import {EIP712} from "solady/utils/EIP712.sol";
 import {ECDSA} from "solady/utils/ECDSA.sol";
 import {Soms} from "swap/Soms.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
+import {State, Status} from "shared/operable/Types.sol";
 import {isContract} from "shared/Utils.sol";
 import {Quote, VerifyRequest} from "./Types.sol";
 import {IManager} from "./IManager.sol";
@@ -40,6 +41,29 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
     }
 
     // **************** Public API ***************************************************
+
+    function status(Side side, address asset) external view returns (Status memory) {
+        // get any status set by us
+        Status memory stat = status();
+        // if any is present, just short circuit here
+        if (stat.state != State.Active) {
+            return stat;
+        } else {
+            IManager man = IManager(manager);
+            bool _paused;
+            // check the RWA specific and, if needed, global ondo pause for this side
+            if (side == Side.Buy) {
+                _paused = man.gmTokenMintingPaused(asset) || man.globalMintingPaused();
+            } else {
+                // sell side
+                _paused = man.gmTokenRedemptionsPaused(asset) || man.globalRedeemingPaused();
+            }
+
+            stat.state = _paused ? State.Paused : State.Active;
+
+            return stat;
+        }
+    }
 
     /**
      * @notice entry point for both Sides of a Swap
@@ -178,6 +202,9 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         // call manager with the appropriate args, NOTE input, ignoring static return
         IManager(manager).mintWithAttestation(quote, oSig, token, input);
 
+        // clean up any residual allowance
+        SafeTransferLib.safeApproveWithRetry(token, manager, 0);
+
         // invariant: minted amount is GTE quote.quantity
         val = IERC20(quote.asset).balanceOf(address(this)) - val;
         require(val >= quote.quantity, InsufficientAmount());
@@ -227,6 +254,9 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
 
         // ignoring the returned USDon value of the tx
         IManager(manager).redeemWithAttestation(quote, oSig, token, amount);
+
+        // clean up any residual allowance
+        SafeTransferLib.safeApproveWithRetry(quote.asset, manager, 0);
 
         // invariant: the amount transferred is at least the given amount (slippage)
         val = IERC20(token).balanceOf(address(this)) - val;

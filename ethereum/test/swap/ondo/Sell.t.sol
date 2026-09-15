@@ -102,6 +102,11 @@ contract OndoSell is Test {
 
         vm.mockCall(ondo.manager(), abi.encodeWithSelector(REDEEM_WITH_SELECTOR), abi.encode(123));
 
+        // there should be 2 calls made to asset approve (q.quantity * q.price, reset)
+        vm.expectCall(q.asset, abi.encodeWithSelector(APPROVE_SELECTOR, ondo.manager(), 1e20), 1);
+        vm.expectCall(q.asset, abi.encodeWithSelector(APPROVE_SELECTOR, ondo.manager(), 0), 1);
+        // vm.expectCall(q.asset, abi.encodeWithSelector(APPROVE_SELECTOR), 2);
+
         // return is the redeemed amt
         vm.prank(ALICE);
         uint256 res = ondo.swap(q, bytes("idc"), address(inT), redeemed, sig);

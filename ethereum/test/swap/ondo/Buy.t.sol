@@ -135,6 +135,10 @@ contract OndoBuy is Test {
         // mock the call to imanager target
         vm.mockCall(ondo.manager(), abi.encodeWithSelector(MINT_WITH_SELECTOR), abi.encode(q.quantity));
 
+        // there should be 2 calls made to input approve (approve, reset)
+        vm.expectCall(address(inT), abi.encodeCall(inT.approve, (ondo.manager(), amt)), 1);
+        vm.expectCall(address(inT), abi.encodeCall(inT.approve, (ondo.manager(), 0)), 1);
+
         // returns delta of the two balance of calls, will be quote.quantity in this case
         vm.prank(ALICE);
         uint256 minted = ondo.swap(q, bytes("idc"), address(inT), amt, sig);

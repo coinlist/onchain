@@ -16,7 +16,11 @@ contract GMock is TestToken {
     uint256 public minRedemption;
 
     bool public quoteWillVerify = true;
+    bool public globalMintingPaused;
+    bool public globalRedeemingPaused;
 
+    mapping(address => bool) public gmTokenMintingPaused;
+    mapping(address => bool) public gmTokenRedemptionsPaused;
     mapping(address => bool) public registered;
 
     constructor(string memory n, string memory s) TestToken(n, s) {}
@@ -108,6 +112,30 @@ contract GMock is TestToken {
         return redeemUSDon;
     }
     // *************** mock settings **********************************/
+
+    function setGlobalMintingPaused(bool val) external returns (bool) {
+        globalMintingPaused = val;
+
+        return true;
+    }
+
+    function setGmTokenMintingPaused(address asset, bool val) external returns (bool) {
+        gmTokenMintingPaused[asset] = val;
+
+        return true;
+    }
+
+    function setGlobalRedeemingPaused(bool val) external returns (bool) {
+        globalRedeemingPaused = val;
+
+        return true;
+    }
+
+    function setGmTokenRedemptionsPaused(address asset, bool val) external returns (bool) {
+        gmTokenRedemptionsPaused[asset] = val;
+
+        return true;
+    }
 
     function setQuoteWillVerify(bool val) external returns (bool) {
         quoteWillVerify = val;
