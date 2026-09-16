@@ -3,7 +3,7 @@ pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {Ondo} from "ondo/Ondo.sol";
-import {State, Status} from "shared/operable/Types.sol";
+import {State, SidedStatus as Status} from "shared/operable/Types.sol";
 
 contract Manager {}
 
@@ -12,6 +12,9 @@ contract OndoDefaultState is Test {
     address public constant ALICE = 0x6060606060606060606060606060606060606060;
     Manager man;
     Ondo swap;
+
+    bytes4 public constant MINTING_PAUSED_SELECTOR = bytes4(keccak256("globalMintingPaused()"));
+    bytes4 public constant REDEEMING_PAUSED_SELECTOR = bytes4(keccak256("globalRedeemingPaused()"));
 
     function setUp() public {
         man = new Manager();
@@ -31,8 +34,14 @@ contract OndoDefaultState is Test {
 
     function testNotPaused() public {
         assertEq(swap.paused(), 0);
+
+        // stub the managers global calls here
+        vm.mockCall(address(man), abi.encodeWithSelector(MINTING_PAUSED_SELECTOR), abi.encode(false));
+        vm.mockCall(address(man), abi.encodeWithSelector(REDEEMING_PAUSED_SELECTOR), abi.encode(false));
+
         Status memory s = swap.status();
-        assertEq(uint8(s.state), uint8(State.Active));
+        assertEq(uint8(s.buyState), uint8(State.Active));
+        assertEq(uint8(s.sellState), uint8(State.Active));
         assertEq(s.flags, uint32(0));
     }
 
@@ -50,15 +59,22 @@ contract OndoDefaultState is Test {
         assertEq(swap.paused(), 0);
         assert(swap.pause(swap.SWAP_LEVEL()));
         assertEq(swap.paused(), swap.SWAP_LEVEL());
+        // internal state will take precedence..
         Status memory s = swap.status();
-        assertEq(uint8(s.state), uint8(State.Paused));
+        assertEq(uint8(s.buyState), uint8(State.Paused));
+        assertEq(uint8(s.sellState), uint8(State.Paused));
         // we use flags as an indication that WE have caused the status
         assertEq(s.flags, swap.SWAP_LEVEL());
 
         // can be unpaused
         assert(swap.pause(0));
+
+        vm.mockCall(address(man), abi.encodeWithSelector(MINTING_PAUSED_SELECTOR), abi.encode(false));
+        vm.mockCall(address(man), abi.encodeWithSelector(REDEEMING_PAUSED_SELECTOR), abi.encode(false));
+
         s = swap.status();
-        assertEq(uint8(s.state), uint8(State.Active));
+        assertEq(uint8(s.buyState), uint8(State.Active));
+        assertEq(uint8(s.sellState), uint8(State.Active));
         assertEq(s.flags, uint32(0));
     }
 }

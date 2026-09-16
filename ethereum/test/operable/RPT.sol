@@ -1,12 +1,12 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.34;
 
 import {Ownable} from "solady/auth/Ownable.sol";
 import {State, Status} from "shared/operable/Types.sol";
-import {Operable} from "shared/operable/Operable.sol";
+import {Reportable} from "shared/operable/Reportable.sol";
 
 /// @notice a test dummy for validating the operable lib
-contract OPT is Ownable, Operable {
+contract RPT is Ownable, Reportable {
     // use as extended functionality for status method override
     uint8 public otherStatus;
     uint8 public foo;

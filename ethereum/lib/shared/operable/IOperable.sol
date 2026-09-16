@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
-import {Status} from "./Types.sol";
-
 interface IOperable {
     // ********************** Events *******************************************************
 
@@ -13,9 +11,6 @@ interface IOperable {
     event Stopped();
 
     // ********************* API ***********************************************************
-
-    /// @notice return the current Status of this contract
-    function status() external view returns (Status memory);
 
     /// @notice pause or unpause a chosen operation level
     function pause(uint32 level) external returns (bool);
