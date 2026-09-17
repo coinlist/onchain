@@ -233,7 +233,7 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
         // transfer the asset to the caller
         SafeTransferLib.safeTransfer(quote.asset, msg.sender, val);
 
-        emit Swapped(msg.sender, token, quote.asset, quote.attestationId, quote.side, amount, _fee, val);
+        emit Swapped(msg.sender, quote.asset, token, quote.attestationId, quote.side, val, _fee, amount);
 
         return val;
     }

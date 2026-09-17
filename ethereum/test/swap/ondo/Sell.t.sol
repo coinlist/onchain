@@ -6,6 +6,7 @@ import {ECDSA} from "solady/utils/ECDSA.sol";
 import {TestStable} from "shared/TestToken.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
 import {Ondo} from "ondo/Ondo.sol";
+import {ISoms} from "swap/ISoms.sol";
 import {Quote, VerifyRequest} from "ondo/Types.sol";
 import {Assembler} from "./Assembler.sol";
 
@@ -82,6 +83,9 @@ contract OndoSell is Test {
 
         // we can facilitate the final txfer in sell by minting ourself the redeemed amt
         inT.mint(address(ondo), redeemed);
+
+        vm.expectEmit(true, true, true, true, address(ondo));
+        emit ISoms.Swapped(ALICE, q.asset, address(inT), q.attestationId, Side.Sell, q.quantity, 0, redeemed);
 
         bytes32 ds = ondo.domainSeparator();
         bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(inT), ALICE, uint64(0), redeemed);
