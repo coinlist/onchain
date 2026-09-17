@@ -8,7 +8,7 @@ import {EIP712} from "solady/utils/EIP712.sol";
 import {ECDSA} from "solady/utils/ECDSA.sol";
 import {Soms} from "swap/Soms.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
-import {State, Status} from "shared/operable/Types.sol";
+import {State, SidedStatus} from "shared/operable/Types.sol";
 import {isContract} from "shared/Utils.sol";
 import {Quote, VerifyRequest} from "./Types.sol";
 import {IManager} from "./IManager.sol";
@@ -42,27 +42,42 @@ contract Ondo is Soms, ReentrancyGuard, EIP712 {
 
     // **************** Public API ***************************************************
 
-    function status(Side side, address asset) external view returns (Status memory) {
-        // get any status set by us
-        Status memory stat = status();
-        // if any is present, just short circuit here
-        if (stat.state != State.Active) {
-            return stat;
-        } else {
-            IManager man = IManager(manager);
-            bool _paused;
-            // check the RWA specific and, if needed, global ondo pause for this side
-            if (side == Side.Buy) {
-                _paused = man.gmTokenMintingPaused(asset) || man.globalMintingPaused();
-            } else {
-                // sell side
-                _paused = man.gmTokenRedemptionsPaused(asset) || man.globalRedeemingPaused();
-            }
-
-            stat.state = _paused ? State.Paused : State.Active;
-
+    /// @notice internal stop/pause state if present, as well as checking global pause state of the IManager
+    function status() public view override returns (SidedStatus memory) {
+        SidedStatus memory stat = super.status();
+        // non zero flags means we have either stopped or paused globally, short-circuit here
+        if (stat.flags > 0) {
             return stat;
         }
+
+        // check both manager globals
+        IManager man = IManager(manager);
+        stat.buyState = man.globalMintingPaused() ? State.Paused : State.Active;
+        stat.sellState = man.globalRedeemingPaused() ? State.Paused : State.Active;
+
+        return stat;
+    }
+
+    function status(address asset) external view returns (SidedStatus memory) {
+        // get any status set by us, or globally by ondo
+        SidedStatus memory stat = status();
+
+        if (stat.flags > 0) {
+            return stat;
+        }
+
+        // if not globally paused, check the specific state of the given rwa
+        IManager man = IManager(manager);
+
+        if (stat.buyState == State.Active && man.gmTokenMintingPaused(asset)) {
+            stat.buyState = State.Paused;
+        }
+
+        if (stat.sellState == State.Active && man.gmTokenRedemptionsPaused(asset)) {
+            stat.sellState = State.Paused;
+        }
+
+        return stat;
     }
 
     /**

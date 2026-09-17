@@ -8,6 +8,13 @@ enum State {
 }
 
 struct Status {
-  State state; // one of the above
   uint32 flags; // indication of internal status
+  State state; // one of the above
+}
+
+// a status struct that has fields for buying and selling
+struct SidedStatus {
+  uint32 flags;
+  State buyState; 
+  State sellState;
 }

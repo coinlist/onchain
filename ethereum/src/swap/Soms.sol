@@ -4,7 +4,7 @@ import {Ownable} from "solady/auth/OwnableRoles.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
-import {Operable} from "shared/operable/Operable.sol";
+import {SidedReportable} from "shared/operable/SidedReportable.sol";
 import {isContract} from "shared/Utils.sol";
 import {ISoms} from "./ISoms.sol";
 import {Side, OptimizedSwapTotal} from "./Types.sol";
@@ -17,7 +17,7 @@ import {Side, OptimizedSwapTotal} from "./Types.sol";
  * there is a Side (Buy, Sell)
  * fee bps amounts are separate per Side
 */
-abstract contract Soms is ISoms, Operable, Ownable {
+abstract contract Soms is ISoms, SidedReportable, Ownable {
     bytes32 public id;
     uint32 public constant SWAP_LEVEL = 2;
     /// @dev storage optimized swap contracts are kind 3

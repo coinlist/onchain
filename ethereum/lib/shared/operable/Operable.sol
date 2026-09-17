@@ -2,31 +2,14 @@
 pragma solidity ^0.8.34;
 
 import {IOperable} from "./IOperable.sol";
-import {State, Status} from "./Types.sol";
 
+/// @notice an abstract base with the ability to be stopped and paused
 abstract contract Operable is IOperable {
   bool public stopped;
 
   uint32 public paused;
 
   // ********************* API *****************************************************
-
-  /// @dev returns a Status if present on this contract
-  function status() public virtual view returns (Status memory) {
-    Status memory stat;
-
-    // stopped takes precedence
-    if (stopped) {
-      stat.state = State.Stopped;
-      // we'll include a value in the flags here to indicate stopped came from us
-      stat.flags = 1;
-    } else if (paused > 0) {
-      stat.state = State.Paused;
-      stat.flags = paused;
-    }
-
-    return stat;
-  }
 
   /// @dev override/extend in child contract in order to set appropriate enforcement of access control
   function pause(uint32 level) public virtual returns (bool) {

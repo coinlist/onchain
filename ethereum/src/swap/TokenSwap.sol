@@ -5,12 +5,12 @@ import {Ownable} from "solady/auth/OwnableRoles.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
-import {Operable} from "shared/operable/Operable.sol";
+import {Reportable} from "shared/operable/Reportable.sol";
 import {isContract} from "shared/Utils.sol";
 import {ITokenSwap} from "./ITokenSwap.sol";
 import {Preview, SwapTotal as Total} from "./Types.sol";
 
-abstract contract TokenSwap is ITokenSwap, Operable, Ownable {
+abstract contract TokenSwap is ITokenSwap, Reportable, Ownable {
     /// @dev all swap contracts are kind 2
     uint16 public constant KIND = 2;
     uint16 public constant VERSION = 1;
