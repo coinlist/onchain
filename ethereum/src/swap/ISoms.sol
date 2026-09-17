@@ -6,17 +6,25 @@ import {Side, OptimizedSwapTotal} from "./Types.sol";
 interface ISoms {
     // ********************* Events **************************************************
 
-    /// @notice Emitted upon a successful swap
-    /// @dev fee prices are included in buy side inputs and excluded from sell side outputs
+    /// @notice Emitted upon a successful buy or sell of the asset token
+    /// @dev Token roles stay fixed on both sides. Amounts use their respective token's decimals.
+    /// @param user The user performing the swap
+    /// @param assetToken The token the user intends to buy or sell
+    /// @param paymentToken The supported token paid on a buy or received on a sell (usually a stable)
+    /// @param externalId External reference whose meaning and uniqueness are implementation-defined
+    /// @param side Buy spends payment tokens for asset tokens; Sell spends asset tokens for payment tokens
+    /// @param assetAmount Amount of assetToken bought on a buy or sold on a sell
+    /// @param fee Fee denominated in paymentToken on both sides
+    /// @param paymentAmount Amount of paymentToken paid on a buy or redeemed on a sell
     event Swapped(
-        address user,
-        address indexed inputToken, // address of stable or asset
-        address indexed outputToken, // address of stable or asset
-        uint256 id,
+        address indexed user,
+        address indexed assetToken,
+        address paymentToken,
+        uint256 externalId,
         Side indexed side,
-        uint256 inputAmount, // amount of stable or asset
+        uint256 assetAmount,
         uint256 fee,
-        uint256 outputAmount // amount of stable or asset,
+        uint256 paymentAmount
     );
 
     /// @notice Emitted when contract owner transfers input token balance (from fees) elsewhere

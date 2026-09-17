@@ -6,6 +6,7 @@ import {ECDSA} from "solady/utils/ECDSA.sol";
 import {TestStable} from "shared/TestToken.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
 import {Ondo} from "ondo/Ondo.sol";
+import {ISoms} from "swap/ISoms.sol";
 import {Quote, VerifyRequest} from "ondo/Types.sol";
 import {Assembler} from "./Assembler.sol";
 
@@ -117,6 +118,9 @@ contract OndoBuy is Test {
 
         Quote memory q = a.quote(block.chainid, Side.Buy);
         // assemble a signature "externally"
+        vm.expectEmit(true, true, true, true, address(ondo));
+        emit ISoms.Swapped(ALICE, q.asset, address(inT), q.attestationId, Side.Buy, q.quantity, 0, amt);
+
         bytes32 ds = ondo.domainSeparator();
         bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, uint64(0), amt);
         bytes32 digest = a.digest(ds, hash);
