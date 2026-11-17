@@ -11,20 +11,20 @@ import {ITokenSwap} from "./ITokenSwap.sol";
 import {Preview, SwapTotal as Total} from "./Types.sol";
 
 abstract contract TokenSwap is ITokenSwap, Reportable, Ownable {
-    /// @dev all swap contracts are kind 2
-    uint16 public constant KIND = 2;
-    uint16 public constant VERSION = 1;
-    /// @dev constant representing the stopable act of performing a swap
-    uint32 public constant SWAP_LEVEL = 2;
-
     /// @dev constant representing the basis point equivalent of 100%
     uint256 public constant ONE_HUNDRED_P = 10000;
     /// @dev the amount (if any) of an input token fee charged per swap (basis point format)
     uint256 public bps;
-
-    address public outputToken;
     bytes32 public id;
+    address public outputToken;
+    /// @dev constant representing the stopable act of performing a swap
+    uint32 public constant SWAP_LEVEL = 2;
+    /// @dev all swap contracts are kind 2
+    uint16 public constant KIND = 2;
+    uint16 public constant VERSION = 1;
 
+    /// @dev tokens allowed as input
+    mapping(address => bool) public inputTokens;
     // @dev user => token => total
     mapping(address => mapping(address => Total)) internal _totals;
 
@@ -88,6 +88,17 @@ abstract contract TokenSwap is ITokenSwap, Reportable, Ownable {
         emit BpsUpdated(bps, points);
 
         bps = points;
+
+        return true;
+    }
+
+    function setInputToken(address token, bool val) external onlyOwner returns (bool) {
+        // invariant: address is valid
+        require(validAddr(token) && isContract(token), InvalidAddress());
+
+        emit InputTokenUpdated(token, inputTokens[token], val);
+
+        inputTokens[token] = val;
 
         return true;
     }

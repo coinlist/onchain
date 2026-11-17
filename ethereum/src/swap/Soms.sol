@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity ^0.8.34;
 import {Ownable} from "solady/auth/OwnableRoles.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
@@ -16,13 +16,10 @@ import {Side, OptimizedSwapTotal} from "./Types.sol";
  * there are no parent-defined swap, authorized or preview methods
  * there is a Side (Buy, Sell)
  * fee bps amounts are separate per Side
-*/
+ */
 abstract contract Soms is ISoms, SidedReportable, Ownable {
     bytes32 public id;
     uint32 public constant SWAP_LEVEL = 2;
-    /// @dev storage optimized swap contracts are kind 3
-    uint16 public constant KIND = 3;
-    uint16 public constant VERSION = 1;
     /// @dev constant representing the basis point equivalent of 100%
     uint16 public constant ONE_HUNDRED_P = 10000;
     /// @dev fixed size array for our typed basis points. relative with the Side enum

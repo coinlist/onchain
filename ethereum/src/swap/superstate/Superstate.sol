@@ -15,15 +15,14 @@ import {Market, MarketState} from "./Types.sol";
 contract Superstate is TokenSwap, ReentrancyGuard {
     /// @dev identifier of the market this integration is serving
     bytes32 public marketId;
-    /// @dev superstate allows these tokens as input
-    mapping(address => bool) public inputTokens;
 
     /// @param token: address of the swap output token
     /// @param mktId: the superstate market id this integration is for
     /// @param swapId: the coinlist id for this integration
     constructor(address token, bytes32 mktId, bytes32 swapId) TokenSwap(token, swapId) {
         marketId = mktId;
-        // USDC is a known valid input for this integration
+
+        // NOTE: USDC is accepted
         inputTokens[0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48] = true;
     }
 
@@ -133,24 +132,4 @@ contract Superstate is TokenSwap, ReentrancyGuard {
 
         return minted;
     }
-
-    // **************** Owner API ****************************************************
-
-    /// @notice given a token address and a boolean representing whitelist status, set those values
-    /// @dev reverts if address is invalid
-    function setInputToken(address token, bool val) external onlyOwner returns (bool) {
-        // invariant: address is valid
-        require(validAddr(token) && isContract(token), InvalidAddress());
-
-        emit InputTokenUpdated(token, inputTokens[token], val);
-
-        inputTokens[token] = val;
-
-        return true;
-    }
-
-    // **************** Events ****************************************************
-
-    /// @notice emitted on any value change to the input tokens whitelist status
-    event InputTokenUpdated(address indexed token, bool prev, bool next);
 }

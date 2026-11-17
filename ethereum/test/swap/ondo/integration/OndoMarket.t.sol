@@ -1,20 +1,20 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {TestToken, TestStable} from "shared/TestToken.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
-import {Ondo} from "ondo/Ondo.sol";
+import {OndoMarket} from "ondo/OndoMarket.sol";
 import {Quote, VerifyRequest} from "ondo/Types.sol";
-import {GMock} from "../GMock.sol";
-import {Assembler} from "../Assembler.sol";
+import {MMock} from "../MMock.sol";
+import {Assembler, ATTRIBUTION} from "../Assembler.sol";
 
 /// @notice buy and sell sides with and without fee
-contract OndoIntegration is Test {
+contract OndoMarketIntegration is Test {
     TestToken public stockz;
     TestStable public usdz;
-    GMock public mock;
-    Ondo public ondo;
+    MMock public mock;
+    OndoMarket public ondo;
     Assembler a;
 
     address public constant ALICE = 0x6060606060606060606060606060606060606060;
@@ -28,7 +28,7 @@ contract OndoIntegration is Test {
         // Alice and Bob both get usdz
         assert(usdz.mint(ALICE, 100e6));
 
-        mock = new GMock("USDMock", "USDM");
+        mock = new MMock("USDMock", "USDM");
         assert(mock.setMinDeposit(MINZ));
         assert(mock.setMinRedemption(MINZ));
 
@@ -36,7 +36,7 @@ contract OndoIntegration is Test {
         // any quote is for stockz as an asset
         assert(a.setRwa(address(stockz)));
 
-        ondo = new Ondo(SALE_ID, a.addr(), address(mock), address(usdz));
+        ondo = new OndoMarket(SALE_ID, a.addr(), address(mock), address(usdz));
 
         // Alice approves ondo to pull funds
         vm.prank(ALICE);
@@ -62,14 +62,15 @@ contract OndoIntegration is Test {
         Quote memory q = a.quote(block.chainid, Side.Buy);
 
         // mimic the backend signature, alice nonce will be 0 here, payment amount is in 6 decimal USD* format
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(usdz), q.asset, ALICE, uint64(0), 50e6);
+        bytes32 hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(usdz), q.asset, ALICE, ATTRIBUTION, uint64(0), 50e6);
         bytes32 digest = a.digest(ondo.domainSeparator(), hash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
         bytes memory sig = a.encodeSig(v, r, s);
 
         vm.prank(ALICE);
         // alice spending 50usdz to get 10stockz
-        uint256 res = ondo.swap(q, bytes("doit"), address(usdz), 50e6, sig);
+        uint256 res = ondo.swap(q, bytes("doit"), address(usdz), 50e6, ATTRIBUTION, sig);
         // note that minted amount is in 18 decimal format, and should be quantity in this case
         assertEq(res, q.quantity);
         // that amount should be her balance at the rwa token
@@ -97,7 +98,8 @@ contract OndoIntegration is Test {
         assert(usdz.mint(address(mock), 10e6));
 
         // alice nonce (count) will be 0 here, amount sell side represents a slippage floor
-        hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(usdz), ALICE, uint64(0), 59e6);
+        hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(usdz), ALICE, ATTRIBUTION, uint64(0), 59e6);
         digest = a.digest(ondo.domainSeparator(), hash);
         (v, r, s) = vm.sign(uint256(a.privateKey()), digest);
         sig = a.encodeSig(v, r, s);
@@ -108,7 +110,7 @@ contract OndoIntegration is Test {
 
         vm.prank(ALICE);
         // alice spending 10stockz to get 60usdz
-        res = ondo.swap(q, bytes("doitagain"), address(usdz), 59e6, sig);
+        res = ondo.swap(q, bytes("doitagain"), address(usdz), 59e6, ATTRIBUTION, sig);
         // note that result here is in the decimal format of the token
         assertEq(res, (((q.quantity * q.price) / 1e18) / 1e12)); // 18 decimal val to 6
         // alice will now be up 10 usdz from her initial balance
@@ -138,7 +140,8 @@ contract OndoIntegration is Test {
         q = a.quote(block.chainid, Side.Buy);
 
         // mimic the backend signature, alice nonce will be 1 now
-        hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(usdz), q.asset, ALICE, uint64(1), 20e6);
+        hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(usdz), q.asset, ALICE, ATTRIBUTION, uint64(1), 20e6);
         digest = a.digest(ondo.domainSeparator(), hash);
         (v, r, s) = vm.sign(uint256(a.privateKey()), digest);
         sig = a.encodeSig(v, r, s);
@@ -148,7 +151,7 @@ contract OndoIntegration is Test {
         assert(usdz.approve(address(ondo), 20e6));
 
         vm.prank(ALICE);
-        res = ondo.swap(q, bytes("onemoartime"), address(usdz), 20e6, sig);
+        res = ondo.swap(q, bytes("onemoartime"), address(usdz), 20e6, ATTRIBUTION, sig);
         // again, should be quantity-ish
         assertEq(res, q.quantity);
 
@@ -172,7 +175,8 @@ contract OndoIntegration is Test {
 
         // alice nonce (count) will be 1 here, amount sell side represents a slippage floor
         // note that the floor is calculated by us and does not have to be fee aware
-        hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(usdz), ALICE, uint64(1), 24e6);
+        hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(usdz), ALICE, ATTRIBUTION, uint64(1), 24e6);
         digest = a.digest(ondo.domainSeparator(), hash);
         (v, r, s) = vm.sign(uint256(a.privateKey()), digest);
         sig = a.encodeSig(v, r, s);
@@ -183,7 +187,7 @@ contract OndoIntegration is Test {
 
         vm.prank(ALICE);
         // alice spending 10stockz to get 60usdz
-        res = ondo.swap(q, bytes("thistimewithfeeling"), address(usdz), 24e6, sig); // 24875000
+        res = ondo.swap(q, bytes("thistimewithfeeling"), address(usdz), 24e6, ATTRIBUTION, sig); // 24875000
 
         t = ondo.totals(ALICE, address(stockz), address(usdz));
         assertEq(t.count, 2);

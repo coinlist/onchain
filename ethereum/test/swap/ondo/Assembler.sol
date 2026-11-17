@@ -1,10 +1,14 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 // @notice assembles eip712 constructs for ondo to be signed
 
 import {Side} from "swap/Types.sol";
 import {Quote, VerifyRequest} from "ondo/Types.sol";
+
+// the attribution coinlist signs over for a request. file level so reading it isn't an external
+// call, which would consume a pending vm.prank or vm.expectRevert
+bytes32 constant ATTRIBUTION = keccak256("coinlist");
 
 contract Assembler {
     uint256 public constant EXPIRY = 1234567890;
@@ -34,12 +38,17 @@ contract Assembler {
         }
     }
 
-    function structHash(bytes32 req, Side side, address input, address output, address user, uint64 nonce, uint256 amt)
-        external
-        pure
-        returns (bytes32)
-    {
-        return keccak256(abi.encode(req, side, input, output, user, nonce, EXPIRY, amt));
+    function structHash(
+        bytes32 req,
+        Side side,
+        address input,
+        address output,
+        address user,
+        bytes32 attribution,
+        uint64 nonce,
+        uint256 amt
+    ) external pure returns (bytes32) {
+        return keccak256(abi.encode(req, side, input, output, user, attribution, nonce, EXPIRY, amt));
     }
 
     function encodeSig(uint8 v, bytes32 r, bytes32 s) external pure returns (bytes memory) {

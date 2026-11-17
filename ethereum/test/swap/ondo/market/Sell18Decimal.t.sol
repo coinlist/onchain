@@ -1,13 +1,13 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {ECDSA} from "solady/utils/ECDSA.sol";
 import {TestToken} from "shared/TestToken.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
-import {Ondo} from "ondo/Ondo.sol";
+import {OndoMarket} from "ondo/OndoMarket.sol";
 import {Quote, VerifyRequest} from "ondo/Types.sol";
-import {Assembler} from "./Assembler.sol";
+import {Assembler, ATTRIBUTION} from "../Assembler.sol";
 
 // manager must be a deployed contract
 contract Manager {}
@@ -27,7 +27,7 @@ contract OndoSell18 is Test {
 
     TestToken inT;
     Manager man;
-    Ondo ondo;
+    OndoMarket ondo;
     Assembler a;
 
     function setUp() public {
@@ -35,7 +35,7 @@ contract OndoSell18 is Test {
         man = new Manager();
         a = new Assembler();
         // use USDZ as an approved input
-        ondo = new Ondo(keccak256("yolo"), a.addr(), address(man), address(inT));
+        ondo = new OndoMarket(keccak256("yolo"), a.addr(), address(man), address(inT));
     }
 
     function testRevertSlippage() public {
@@ -45,7 +45,9 @@ contract OndoSell18 is Test {
 
         // assemble a signature "externally"
         bytes32 ds = ondo.domainSeparator();
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(inT), ALICE, uint64(0), redeemed);
+        bytes32 hash = a.structHash(
+            ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(inT), ALICE, ATTRIBUTION, uint64(0), redeemed
+        );
         bytes32 digest = a.digest(ds, hash);
         // sign and encode the sig into single bytes
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
@@ -69,7 +71,7 @@ contract OndoSell18 is Test {
 
         vm.expectRevert(abi.encodeWithSignature("InsufficientAmount()"));
         vm.prank(ALICE);
-        ondo.swap(q, bytes("idc"), address(inT), redeemed, sig);
+        ondo.swap(q, bytes("idc"), address(inT), redeemed, ATTRIBUTION, sig);
     }
 
     // happy path, no fee
@@ -82,7 +84,9 @@ contract OndoSell18 is Test {
         inT.mint(address(ondo), redeemed);
 
         bytes32 ds = ondo.domainSeparator();
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(inT), ALICE, uint64(0), redeemed);
+        bytes32 hash = a.structHash(
+            ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(inT), ALICE, ATTRIBUTION, uint64(0), redeemed
+        );
         bytes32 digest = a.digest(ds, hash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
         bytes memory sig = a.encodeSig(v, r, s);
@@ -102,7 +106,7 @@ contract OndoSell18 is Test {
 
         // return is the redeemed amt
         vm.prank(ALICE);
-        uint256 res = ondo.swap(q, bytes("idc"), address(inT), redeemed, sig);
+        uint256 res = ondo.swap(q, bytes("idc"), address(inT), redeemed, ATTRIBUTION, sig);
         assertEq(res, redeemed);
 
         // correct amount txfer (it's the mocks[1] amt)
@@ -128,7 +132,9 @@ contract OndoSell18 is Test {
         inT.mint(address(ondo), redeemed);
 
         bytes32 ds = ondo.domainSeparator();
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(inT), ALICE, uint64(0), redeemed);
+        bytes32 hash = a.structHash(
+            ondo.VERIFY_REQUEST(), Side.Sell, q.asset, address(inT), ALICE, ATTRIBUTION, uint64(0), redeemed
+        );
         bytes32 digest = a.digest(ds, hash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
         bytes memory sig = a.encodeSig(v, r, s);
@@ -148,7 +154,7 @@ contract OndoSell18 is Test {
 
         // return is the redeemed amt
         vm.prank(ALICE);
-        uint256 res = ondo.swap(q, bytes("idc"), address(inT), redeemed, sig);
+        uint256 res = ondo.swap(q, bytes("idc"), address(inT), redeemed, ATTRIBUTION, sig);
 
         // NOTE: inT.balanceOf(ALICE) would reflect the mocks[1] value, but the trace shows correct txfer
 

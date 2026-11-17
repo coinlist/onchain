@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.34;
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.34;
 
 /// @notice differentiation of swap types
 enum Side {

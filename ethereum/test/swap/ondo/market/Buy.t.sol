@@ -1,14 +1,14 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {ECDSA} from "solady/utils/ECDSA.sol";
 import {TestStable} from "shared/TestToken.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
-import {Ondo} from "ondo/Ondo.sol";
+import {OndoMarket} from "ondo/OndoMarket.sol";
 import {ISoms} from "swap/ISoms.sol";
 import {Quote, VerifyRequest} from "ondo/Types.sol";
-import {Assembler} from "./Assembler.sol";
+import {Assembler, ATTRIBUTION} from "../Assembler.sol";
 
 // manager must be a deployed contract
 contract Manager {}
@@ -26,7 +26,7 @@ contract OndoBuy is Test {
 
     TestStable inT;
     Manager man;
-    Ondo ondo;
+    OndoMarket ondo;
     Assembler a;
 
     function setUp() public {
@@ -34,7 +34,7 @@ contract OndoBuy is Test {
         man = new Manager();
         a = new Assembler();
         // use USDZ as an approved input
-        ondo = new Ondo(keccak256("yolo"), a.addr(), address(man), address(inT));
+        ondo = new OndoMarket(keccak256("yolo"), a.addr(), address(man), address(inT));
     }
 
     function testSwapAddress() public {
@@ -55,7 +55,8 @@ contract OndoBuy is Test {
         Quote memory q = a.quote(block.chainid, Side.Buy);
         // assemble a signature "externally"
         bytes32 ds = ondo.domainSeparator();
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, uint64(0), amt);
+        bytes32 hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, ATTRIBUTION, uint64(0), amt);
         bytes32 digest = a.digest(ds, hash);
         // sign and encode the sig into single bytes
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
@@ -63,7 +64,7 @@ contract OndoBuy is Test {
 
         vm.expectRevert(abi.encodeWithSignature("InvalidAmount()"));
         vm.prank(ALICE);
-        uint256 minted = ondo.swap(q, bytes("idc"), address(inT), amt, sig);
+        uint256 minted = ondo.swap(q, bytes("idc"), address(inT), amt, ATTRIBUTION, sig);
     }
 
     function testRevertUnderMint() public {
@@ -81,7 +82,8 @@ contract OndoBuy is Test {
         Quote memory q = a.quote(block.chainid, Side.Buy);
         // assemble a signature "externally"
         bytes32 ds = ondo.domainSeparator();
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, uint64(0), amt);
+        bytes32 hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, ATTRIBUTION, uint64(0), amt);
         bytes32 digest = a.digest(ds, hash);
         // sign and encode the sig into single bytes
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
@@ -100,7 +102,7 @@ contract OndoBuy is Test {
 
         vm.expectRevert(abi.encodeWithSignature("InsufficientAmount()"));
         vm.prank(ALICE);
-        ondo.swap(q, bytes("idc"), address(inT), amt, sig);
+        ondo.swap(q, bytes("idc"), address(inT), amt, ATTRIBUTION, sig);
     }
 
     // happy path, no fee
@@ -119,10 +121,11 @@ contract OndoBuy is Test {
         Quote memory q = a.quote(block.chainid, Side.Buy);
         // assemble a signature "externally"
         vm.expectEmit(true, true, true, true, address(ondo));
-        emit ISoms.Swapped(ALICE, q.asset, address(inT), q.attestationId, Side.Buy, q.quantity, 0, amt);
+        emit ISoms.Swapped(ALICE, q.asset, address(inT), ATTRIBUTION, q.attestationId, Side.Buy, q.quantity, 0, amt);
 
         bytes32 ds = ondo.domainSeparator();
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, uint64(0), amt);
+        bytes32 hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, ATTRIBUTION, uint64(0), amt);
         bytes32 digest = a.digest(ds, hash);
         // sign and encode the sig into single bytes
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
@@ -145,7 +148,7 @@ contract OndoBuy is Test {
 
         // returns delta of the two balance of calls, will be quote.quantity in this case
         vm.prank(ALICE);
-        uint256 minted = ondo.swap(q, bytes("idc"), address(inT), amt, sig);
+        uint256 minted = ondo.swap(q, bytes("idc"), address(inT), amt, ATTRIBUTION, sig);
         assertEq(minted, q.quantity);
         Total memory total = ondo.totals(ALICE, address(inT), q.asset);
         assertEq(total.count, 1);
@@ -184,7 +187,8 @@ contract OndoBuy is Test {
         Quote memory q = a.quote(block.chainid, Side.Buy);
 
         // bytes32 ds = ondo.domainSeparator();
-        bytes32 hash = a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, uint64(0), amt);
+        bytes32 hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, ATTRIBUTION, uint64(0), amt);
         bytes32 digest = a.digest(ondo.domainSeparator(), hash);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
         bytes memory sig = a.encodeSig(v, r, s);
@@ -197,7 +201,7 @@ contract OndoBuy is Test {
         vm.mockCall(ondo.manager(), abi.encodeWithSelector(MINT_WITH_SELECTOR), abi.encode(q.quantity));
 
         vm.prank(ALICE);
-        uint256 minted = ondo.swap(q, bytes("idc"), address(inT), amt, sig);
+        uint256 minted = ondo.swap(q, bytes("idc"), address(inT), amt, ATTRIBUTION, sig);
         assertEq(minted, q.quantity);
 
         // totals will reflect fee
@@ -214,5 +218,20 @@ contract OndoBuy is Test {
         assertEq(total.inputSum, 0);
         assertEq(total.outputSum, 0);
         assertEq(total.feeSum, 0);
+    }
+
+    // coinlist signs over the attribution, a caller can't swap in their own
+    function testRevertAttributionMismatch() public {
+        uint256 amt = 2e8;
+        Quote memory q = a.quote(block.chainid, Side.Buy);
+        bytes32 hash =
+            a.structHash(ondo.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, ATTRIBUTION, uint64(0), amt);
+        bytes32 digest = a.digest(ondo.domainSeparator(), hash);
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
+        bytes memory sig = a.encodeSig(v, r, s);
+
+        vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
+        vm.prank(ALICE);
+        ondo.swap(q, bytes("idc"), address(inT), amt, keccak256("not coinlist"), sig);
     }
 }

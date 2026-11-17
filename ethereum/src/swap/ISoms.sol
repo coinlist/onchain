@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity ^0.8.34;
 
 import {Side, OptimizedSwapTotal} from "./Types.sol";
 
@@ -11,6 +11,7 @@ interface ISoms {
     /// @param user The user performing the swap
     /// @param assetToken The token the user intends to buy or sell
     /// @param paymentToken The supported token paid on a buy or received on a sell (usually a stable)
+    /// @param attribution Source of the swap, as signed over by the integrator
     /// @param externalId External reference whose meaning and uniqueness are implementation-defined
     /// @param side Buy spends payment tokens for asset tokens; Sell spends asset tokens for payment tokens
     /// @param assetAmount Amount of assetToken bought on a buy or sold on a sell
@@ -20,6 +21,7 @@ interface ISoms {
         address indexed user,
         address indexed assetToken,
         address paymentToken,
+        bytes32 attribution,
         uint256 externalId,
         Side indexed side,
         uint256 assetAmount,

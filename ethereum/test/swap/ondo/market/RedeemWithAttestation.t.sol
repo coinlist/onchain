@@ -1,9 +1,9 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {TestToken, TestStable} from "shared/TestToken.sol";
-import {GMock} from "./GMock.sol";
+import {MMock} from "../MMock.sol";
 import {Side} from "swap/Types.sol";
 import {Quote} from "ondo/Types.sol";
 
@@ -11,11 +11,11 @@ contract RedeemWithAttestation is Test {
     address public constant ALICE = 0x6060606060606060606060606060606060606060;
     TestStable usdz;
     TestToken stockz;
-    GMock mock;
+    MMock mock;
     Quote quote;
 
     function setUp() public {
-        mock = new GMock("Gmock", "GMT");
+        mock = new MMock("Gmock", "GMT");
         // our deposit token
         usdz = new TestStable("USDz", "USDZ");
         // USDZ 4 manager
