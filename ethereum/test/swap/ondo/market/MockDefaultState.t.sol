@@ -1,15 +1,15 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
-import {GMock} from "./GMock.sol";
+import {MMock} from "../MMock.sol";
 
-contract GMockDefaultState is Test {
+contract MMockDefaultState is Test {
     address public constant SOMEONE = 0x6060606060606060606060606060606060606060;
-    GMock mock;
+    MMock mock;
 
     function setUp() public {
-        mock = new GMock("Gmock", "GMT");
+        mock = new MMock("Gmock", "GMT");
     }
 
     function testMetaData() public {

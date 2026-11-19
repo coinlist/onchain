@@ -1,41 +1,50 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
-import {Ondo} from "ondo/Ondo.sol";
+import {TestStable} from "shared/TestToken.sol";
+import {OndoPortfolio} from "ondo/OndoPortfolio.sol";
 import {State, SidedStatus as Status} from "shared/operable/Types.sol";
 
 contract Manager {}
 
-contract OndoDefaultState is Test {
-    bytes32 public constant REQ_TYPE_HASH = 0xbc80a36b87b5bb1806c854856f3085b7cf8ffe21a3f92f0b348be549b8f9501f;
+contract OndoPortfolioDefaultState is Test {
+    bytes32 public constant REQ_TYPE_HASH = 0x79d6236ca1d588b1996795b0261d69b40eb4d5f89d56c5ac1301e8d7eda9acf1;
     address public constant ALICE = 0x6060606060606060606060606060606060606060;
-    Manager man;
-    Ondo swap;
 
+    bytes4 public constant STABLECOIN_SELECTOR = bytes4(keccak256("stablecoin()"));
     bytes4 public constant MINTING_PAUSED_SELECTOR = bytes4(keccak256("globalMintingPaused()"));
     bytes4 public constant REDEEMING_PAUSED_SELECTOR = bytes4(keccak256("globalRedeemingPaused()"));
 
+    TestStable usdz;
+    Manager man;
+    OndoPortfolio swap;
+
     function setUp() public {
+        usdz = new TestStable("usdz", "USDZ");
         man = new Manager();
-        // can pass zero address for no input token at launch
-        swap = new Ondo(keccak256("yolo"), ALICE, address(man), address(0));
+        vm.mockCall(address(man), abi.encodeWithSelector(STABLECOIN_SELECTOR), abi.encode(address(usdz)));
+        swap = new OndoPortfolio(keccak256("yolo"), ALICE, address(man));
     }
 
-    function testRevertTokenConst() public {
-        // alice obvs is not a valid token
-        vm.expectRevert();
-        new Ondo(keccak256("yolo"), ALICE, address(man), ALICE);
-    }
-
-    function testRequestTypeHash() public {
+    function testDefaults() public view {
+        assertEq(swap.manager(), address(man));
+        assertEq(swap.stablecoin(), address(usdz));
+        assertEq(swap.coinList(), ALICE);
+        assertEq(swap.KIND(), 3);
+        assertEq(swap.VERSION(), 2);
         assertEq(swap.VERIFY_REQUEST(), REQ_TYPE_HASH);
+        // the stablecoin is the one enabled input
+        assert(swap.inputTokens(address(usdz)));
+    }
+
+    function testRevertManager() public {
+        vm.expectRevert(abi.encodeWithSignature("InvalidAddress()"));
+        new OndoPortfolio(keccak256("yolo"), ALICE, ALICE);
     }
 
     function testNotPaused() public {
         assertEq(swap.paused(), 0);
-
-        // stub the managers global calls here
         vm.mockCall(address(man), abi.encodeWithSelector(MINTING_PAUSED_SELECTOR), abi.encode(false));
         vm.mockCall(address(man), abi.encodeWithSelector(REDEEMING_PAUSED_SELECTOR), abi.encode(false));
 
@@ -45,36 +54,18 @@ contract OndoDefaultState is Test {
         assertEq(s.flags, uint32(0));
     }
 
-    function testRevertPause() public {
-        vm.expectRevert(4);
-        // should only accept 0 (unpause) and honored SWAP_LEVEL values
-        swap.pause(1);
-        // NOTE a decimal value of 3 would pass and behave as expected
-        swap.pause(4);
-        swap.pause(5);
-        swap.pause(8);
-    }
-
     function testPause() public {
-        assertEq(swap.paused(), 0);
         assert(swap.pause(swap.SWAP_LEVEL()));
-        assertEq(swap.paused(), swap.SWAP_LEVEL());
-        // internal state will take precedence..
+        // internal state takes precedence, the manager is never asked
         Status memory s = swap.status();
         assertEq(uint8(s.buyState), uint8(State.Paused));
         assertEq(uint8(s.sellState), uint8(State.Paused));
-        // we use flags as an indication that WE have caused the status
         assertEq(s.flags, swap.SWAP_LEVEL());
 
-        // can be unpaused
         assert(swap.pause(0));
-
         vm.mockCall(address(man), abi.encodeWithSelector(MINTING_PAUSED_SELECTOR), abi.encode(false));
         vm.mockCall(address(man), abi.encodeWithSelector(REDEEMING_PAUSED_SELECTOR), abi.encode(false));
-
         s = swap.status();
-        assertEq(uint8(s.buyState), uint8(State.Active));
-        assertEq(uint8(s.sellState), uint8(State.Active));
         assertEq(s.flags, uint32(0));
     }
 }

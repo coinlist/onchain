@@ -1,13 +1,13 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {ECDSA} from "solady/utils/ECDSA.sol";
 import {TestStable} from "shared/TestToken.sol";
 import {Side, OptimizedSwapTotal as Total} from "swap/Types.sol";
-import {Ondo} from "ondo/Ondo.sol";
+import {OndoMarket} from "ondo/OndoMarket.sol";
 import {Quote, VerifyRequest} from "ondo/Types.sol";
-import {Assembler} from "./Assembler.sol";
+import {Assembler, ATTRIBUTION} from "../Assembler.sol";
 
 // manager must be a deployed contract
 contract Manager {}
@@ -17,7 +17,7 @@ contract OndoSwap is Test {
 
     TestStable inT;
     Manager man;
-    Ondo swap;
+    OndoMarket swap;
     Assembler a;
 
     function setUp() public {
@@ -25,7 +25,7 @@ contract OndoSwap is Test {
         man = new Manager();
         a = new Assembler();
         // use USDZ as an approved input
-        swap = new Ondo(keccak256("yolo"), ALICE, address(man), address(inT));
+        swap = new OndoMarket(keccak256("yolo"), ALICE, address(man), address(inT));
     }
 
     function testRevertVerify() public {
@@ -34,7 +34,8 @@ contract OndoSwap is Test {
         Quote memory q = a.quote(block.chainid, Side.Buy);
         // assemble a signature "externally"
         bytes32 ds = swap.domainSeparator();
-        bytes32 hash = a.structHash(swap.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, uint64(0), amt);
+        bytes32 hash =
+            a.structHash(swap.VERIFY_REQUEST(), Side.Buy, address(inT), q.asset, ALICE, ATTRIBUTION, uint64(0), amt);
         bytes32 digest = a.digest(ds, hash);
         // sign and encode the sig into single bytes
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(uint256(a.privateKey()), digest);
@@ -42,6 +43,6 @@ contract OndoSwap is Test {
 
         vm.expectRevert(abi.encodeWithSignature("Unauthorized()"));
         vm.prank(ALICE);
-        uint256 minted = swap.swap(q, bytes("idc"), address(inT), amt, sig);
+        uint256 minted = swap.swap(q, bytes("idc"), address(inT), amt, ATTRIBUTION, sig);
     }
 }

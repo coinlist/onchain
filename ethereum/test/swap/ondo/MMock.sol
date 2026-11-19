@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.34;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.38;
 
 import {IERC20} from "forge-std/interfaces/IERC20.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
@@ -9,7 +9,7 @@ import {Side} from "swap/Types.sol";
 import {Quote} from "ondo/Types.sol";
 
 /// @dev make as a token as to capture USDon "overminting" behavior
-contract GMock is TestToken {
+contract MMock is TestToken {
     // an "expanded" (18 decimal) USD deposit amount must be greater than this..
     uint256 public minDeposit;
     // an "expanded" (18 decimal) USD redemption amount must be greater than this..

@@ -1,24 +1,24 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.34;
 
 import {Test} from "forge-std/Test.sol";
 import {TestToken, TestStable} from "shared/TestToken.sol";
 import {State, SidedStatus as Status} from "shared/operable/Types.sol";
 import {Side} from "swap/Types.sol";
-import {Ondo} from "ondo/Ondo.sol";
-import {GMock} from "../GMock.sol";
+import {OndoMarket} from "ondo/OndoMarket.sol";
+import {MMock} from "../MMock.sol";
 
-contract OndoStatus is Test {
-    GMock public mock;
-    Ondo public ondo;
+contract OndoMarketStatus is Test {
+    MMock public mock;
+    OndoMarket public ondo;
 
     address public constant CL = 0x6060606060606060606060606060606060606060;
     address public constant STOCKZ = 0x7070707070707070707070707070707070707070;
     bytes32 public constant SALE_ID = keccak256("bcd-234");
 
     function setUp() public {
-        mock = new GMock("USDMock", "USDM");
-        ondo = new Ondo(SALE_ID, CL, address(mock), address(0));
+        mock = new MMock("USDMock", "USDM");
+        ondo = new OndoMarket(SALE_ID, CL, address(mock), address(0));
     }
 
     function testMintingPaused() public {

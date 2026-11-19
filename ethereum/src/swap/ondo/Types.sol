@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity ^0.8.34;
 
 import {Side} from "swap/Types.sol";
 
@@ -28,13 +28,14 @@ struct Quote {
     bytes32 additionalData;
 }
 
-/// @notice EIP-712 Type Hash for Ninshuber prepared payloads
-/// @dev result: 0xbc80a36b87b5bb1806c854856f3085b7cf8ffe21a3f92f0b348be549b8f9501f
+/// @notice EIP-712 Type Hash for CoinList prepared payloads
+/// @dev result: 0x79d6236ca1d588b1996795b0261d69b40eb4d5f89d56c5ac1301e8d7eda9acf1
 struct VerifyRequest {
     Side side;
     address inputToken;
     address outputToken;
     address sender;
+    bytes32 attribution;
     uint256 nonce;
     uint256 expiry;
     uint256 amount;

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.34;
+pragma solidity ^0.8.34;
 
 enum State {
   Active, // active by default
@@ -15,6 +15,6 @@ struct Status {
 // a status struct that has fields for buying and selling
 struct SidedStatus {
   uint32 flags;
-  State buyState; 
+  State buyState;
   State sellState;
 }
